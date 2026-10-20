@@ -1,0 +1,87 @@
+@startuml
+!theme plain
+skinparam classAttributeIconSize 0
+
+package "Domain Models" {
+    class User {
+        + id : UUID
+        + username : String
+        + passwordHash : String
+        + adminTier : Integer
+        + getPermissions() : List<Permission>
+        + updateTier(newTier : Integer) : void
+    }
+
+    class ResourceGroup {
+        + groupId : String
+        + name : String
+        + maxCpuCores : Float
+        + maxMemoryGb : Float
+        + allowGpu : Boolean
+    }
+
+    class StorageGroup {
+        + groupId : String
+        + name : String
+        + hostPath : String
+        + sizeQuotaGb : Float
+        + enforceQuota() : void
+    }
+
+    class Container {
+        + containerId : String
+        + name : String
+        + engineType : EngineType
+        + status : ContainerStatus
+        + metrics : NodeMetrics
+        + start() : void
+        + stop() : void
+        + delete() : void
+        + fetchLogs() : String
+    }
+
+    class ComposeDeployment {
+        + deploymentId : String
+        + composeContent : String
+        + engineType : EngineType
+        + deploy() : void
+        + teardown() : void
+    }
+
+    class ContainerConfig {
+        + imageRef : String
+        + networks : List<String>
+        + volumes : Map<String, String>
+        + envVars : Map<String, String>
+        + ports : List<String>
+        + generateCompose() : String
+    }
+
+    class NodeMetrics <<Utility>> {
+        + cpuUsage : Float
+        + memoryUsage : Float
+        + diskSpaceAvailable : Float
+        + timestamp : DateTime
+    }
+}
+
+package "Services" {
+    class OrchestrationService {
+        + deployFromCompose(composeContent : String, engine : EngineType) : void
+        + createFromUIConfig(config : ContainerConfig) : void
+        + syncContainers() : void
+    }
+
+    class StorageService {
+        + createStorageGroup(name : String, quotaGb : Float) : StorageGroup
+        + getAvailablePath(group : StorageGroup) : String
+    }
+}
+
+User "1" -- "0..*" Container : manages >
+Container *-- "1" NodeMetrics : tracks >
+ContainerConfig ..> ComposeDeployment : generates >
+ContainerConfig "*" -- "1" ResourceGroup : constrained by >
+ContainerConfig "*" -- "1" StorageGroup : stores data in >
+OrchestrationService ..> Container : controls >
+@enduml
