@@ -1,8 +1,19 @@
 @startuml
 !theme plain
 skinparam classAttributeIconSize 0
+skinparam shadowing false
+hide empty members
 
 package "Domain Models" {
+    class ContainerConfig {
+        + imageRef : String
+        + networks : List<String>
+        + volumes : Map<String, String>
+        + envVars : Map<String, String>
+        + ports : List<String>
+        + generateCompose() : String
+    }
+
     class User {
         + id : UUID
         + username : String
@@ -28,6 +39,14 @@ package "Domain Models" {
         + enforceQuota() : void
     }
 
+    class ComposeDeployment {
+        + deploymentId : String
+        + composeContent : String
+        + engineType : EngineType
+        + deploy() : void
+        + teardown() : void
+    }
+
     class Container {
         + containerId : String
         + name : String
@@ -40,23 +59,6 @@ package "Domain Models" {
         + fetchLogs() : String
     }
 
-    class ComposeDeployment {
-        + deploymentId : String
-        + composeContent : String
-        + engineType : EngineType
-        + deploy() : void
-        + teardown() : void
-    }
-
-    class ContainerConfig {
-        + imageRef : String
-        + networks : List<String>
-        + volumes : Map<String, String>
-        + envVars : Map<String, String>
-        + ports : List<String>
-        + generateCompose() : String
-    }
-
     class NodeMetrics <<Utility>> {
         + cpuUsage : Float
         + memoryUsage : Float
@@ -66,22 +68,29 @@ package "Domain Models" {
 }
 
 package "Services" {
+    class StorageService {
+        + createStorageGroup(name : String, quotaGb : Float) : StorageGroup
+        + getAvailablePath(group : StorageGroup) : String
+    }
+
     class OrchestrationService {
         + deployFromCompose(composeContent : String, engine : EngineType) : void
         + createFromUIConfig(config : ContainerConfig) : void
         + syncContainers() : void
     }
-
-    class StorageService {
-        + createStorageGroup(name : String, quotaGb : Float) : StorageGroup
-        + getAvailablePath(group : StorageGroup) : String
-    }
 }
 
-User "1" -- "0..*" Container : manages >
-Container *-- "1" NodeMetrics : tracks >
-ContainerConfig ..> ComposeDeployment : generates >
+' Layout aligned with SE1_Report1.pdf Figure 1
+ContainerConfig -[hidden]right- User
+ResourceGroup -[hidden]right- StorageGroup
+StorageGroup -[hidden]right- ComposeDeployment
+ComposeDeployment -[hidden]right- Container
+StorageService -[hidden]right- OrchestrationService
+
 ContainerConfig "*" -- "1" ResourceGroup : constrained by >
 ContainerConfig "*" -- "1" StorageGroup : stores data in >
+ContainerConfig ..> ComposeDeployment : generates >
+User "1" -- "0..*" Container : manages >
+Container *-- "1" NodeMetrics : tracks >
 OrchestrationService ..> Container : controls >
 @enduml

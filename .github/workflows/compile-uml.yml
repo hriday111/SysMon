@@ -1,0 +1,69 @@
+name: Compile UML diagrams
+
+on:
+  push:
+    paths:
+      - "Task1/**/*.uml"
+      - "Task1/**/*.puml"
+      - ".github/workflows/compile-uml.yml"
+  pull_request:
+    paths:
+      - "Task1/**/*.uml"
+      - "Task1/**/*.puml"
+      - ".github/workflows/compile-uml.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Needed so the commit step can push back to the triggering branch
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile PlantUML sources to SVG
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(Task1/*.{uml,puml})
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No UML sources found under Task1/"
+            exit 0
+          fi
+
+          for src in "${files[@]}"; do
+            base="$(basename "$src")"
+            name="${base%.*}"
+            out="Task1/${name}.svg"
+            echo "Compiling $src -> $out"
+            # PlantUML's CLI ignores the .uml extension when resolving files,
+            # so pipe the source explicitly.
+            docker run --rm -i plantuml/plantuml:latest -tsvg -pipe < "$src" > "$out"
+          done
+
+      - name: Upload SVG artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: uml-diagrams
+          path: Task1/*.svg
+
+      - name: Commit regenerated diagrams
+        # Skip on pull_request forks / when nothing changed
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Task1/*.svg
+          if git diff --staged --quiet; then
+            echo "SVG outputs are already up to date."
+            exit 0
+          fi
+          git commit -m "chore: regenerate UML diagram SVGs"
+          git push

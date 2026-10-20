@@ -303,4 +303,4 @@ The following diagram presents the conceptual class structures focusing
 on visual builder configurations, Compose deployments, and
 resource/storage governance.
 
-[SysMon Domain and Service Class Diagram (PDF)](./high_level_cd.pdf)
+![SysMon Domain and Service Class Diagram](./use_case_diagram.svg)
