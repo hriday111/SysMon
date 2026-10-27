@@ -297,6 +297,35 @@ infrastructure.
 
 *Use Case: Managing Existing Compute and Storage Groups*
 
+## 8. Spawn LLM Server
+
+| Field | Description |
+| --- | --- |
+| **Primary Actor** | Admin (Tier 1, Tier 2, or Tier 3) |
+| **Scope** | SysMon LLM Orchestration & Frontend Module |
+| **Level** | User Goal |
+| **Brief Description** | The admin opens the LLM console, ensures Ollama is available, pastes a HuggingFace model repo, configures runtime parameters, and spawns an Ollama server on a chosen port only if the model fits their assigned Compute Group. |
+| **Preconditions** | The admin is authenticated and assigned a Compute Group. The LLM console is available. |
+| **Success Condition** | Ollama is listening on the chosen port with the configured model and parameters, within Compute Group limits. |
+| **Failure Condition** | No LLM server is spawned (e.g. model exceeds Compute Group limits, or Ollama install fails). |
+
+### Main Success Scenario
+
+1. The admin navigates to the LLM console.
+2. SysMon ensures the Ollama runtime is installed (installs it on first use if missing).
+3. The admin pastes a HuggingFace model repository reference.
+4. The admin sets context length, CPU/GPU split (e.g. `-ngl`), and server port.
+5. SysMon validates the estimated model requirements against the admin's assigned Compute Group.
+6. The admin clicks Spawn.
+7. SysMon starts the Ollama server on the specified port.
+
+### Extensions
+
+- 2a. Ollama is missing: SysMon installs Ollama, then continues; if install fails, the flow stops with an error.
+- 5a. Model exceeds Compute Group limits (RAM, GPU, etc.): SysMon shows an error and does not spawn the server.
+
+*Use Case: Spawn LLM Server*
+
 # Class Diagram Specification
 
 The following diagram presents the conceptual class structures focusing

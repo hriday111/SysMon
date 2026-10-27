@@ -3,11 +3,15 @@ name: Compile UML diagrams
 on:
   push:
     paths:
+      - "Task1/**/src/**/*.uml"
+      - "Task1/**/src/**/*.puml"
       - "Task1/**/*.uml"
       - "Task1/**/*.puml"
       - ".github/workflows/compile-uml.yml"
   pull_request:
     paths:
+      - "Task1/**/src/**/*.uml"
+      - "Task1/**/src/**/*.puml"
       - "Task1/**/*.uml"
       - "Task1/**/*.puml"
       - ".github/workflows/compile-uml.yml"
@@ -30,28 +34,48 @@ jobs:
       - name: Compile PlantUML sources to SVG
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          files=(Task1/*.{uml,puml})
+          shopt -s nullglob globstar
+
+          # Prefer sources under any Task1/**/src/ tree; fall back to
+          # loose .uml/.puml files directly under Task1/ for compatibility.
+          files=(Task1/**/src/**/*.{uml,puml})
+          if [ ${#files[@]} -eq 0 ]; then
+            files=(Task1/*.{uml,puml})
+          fi
           if [ ${#files[@]} -eq 0 ]; then
             echo "No UML sources found under Task1/"
             exit 0
           fi
 
+          count=0
           for src in "${files[@]}"; do
             base="$(basename "$src")"
             name="${base%.*}"
-            out="Task1/${name}.svg"
+            src_dir="$(dirname "$src")"
+            # Sources in .../src/foo.uml -> SVG at .../foo.svg
+            # Loose sources in Task1/foo.uml -> SVG at Task1/foo.svg
+            if [[ "$src_dir" == */src ]]; then
+              out_dir="$(dirname "$src_dir")"
+            else
+              out_dir="$src_dir"
+            fi
+            out="${out_dir}/${name}.svg"
             echo "Compiling $src -> $out"
             # PlantUML's CLI ignores the .uml extension when resolving files,
             # so pipe the source explicitly.
             docker run --rm -i plantuml/plantuml:latest -tsvg -pipe < "$src" > "$out"
+            count=$((count + 1))
           done
+
+          echo "Compiled ${count} diagram(s)."
 
       - name: Upload SVG artifacts
         uses: actions/upload-artifact@v4
         with:
           name: uml-diagrams
-          path: Task1/*.svg
+          path: |
+            Task1/**/*.svg
+            Task1/*.svg
 
       - name: Commit regenerated diagrams
         # Skip on pull_request forks / when nothing changed
@@ -60,7 +84,13 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Task1/*.svg
+          # Stage every SVG under Task1 (covers use_case_diagrams/ and any other dirs)
+          mapfile -t svgs < <(find Task1 -type f -name '*.svg' -print)
+          if [ ${#svgs[@]} -eq 0 ]; then
+            echo "No SVG files to commit."
+            exit 0
+          fi
+          git add "${svgs[@]}"
           if git diff --staged --quiet; then
             echo "SVG outputs are already up to date."
             exit 0

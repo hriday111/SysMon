@@ -1,0 +1,45 @@
+@startuml
+
+left to right direction
+
+actor "Tier 1 Admin" as A1 #blue
+actor "Tier 2 Admin" as A2 #red
+actor "Tier 3 Admin" as A3 #green
+actor "Ollama" as Ollama
+
+rectangle "SysMon - LLM Orchestration & Frontend" {
+    usecase "List Running\nLLM Servers" as LIST
+    usecase "Stop LLM Server" as STOP
+    usecase "Restart LLM Server" as RESTART
+    usecase "Select Running\nInstance" as SELECT
+    usecase "Request Confirmation" as CONFIRM_REQ
+    usecase "Confirm Stop" as CONFIRM
+    usecase "Cancel Stop" as CANCEL
+    usecase "Terminate Ollama\nProcess on Port" as TERM
+}
+
+A1 --> LIST #line:blue;
+A1 --> STOP #line:blue;
+A1 --> RESTART #line:blue;
+
+A2 --> LIST #line:red;
+A2 --> STOP #line:red;
+A2 --> RESTART #line:red;
+
+A3 --> LIST #line:green;
+A3 --> STOP #line:green;
+A3 --> RESTART #line:green;
+
+STOP ..> SELECT : <<include>>
+STOP ..> CONFIRM_REQ : <<include>>
+STOP ..> CONFIRM : <<include>>
+STOP ..> TERM : <<include>>
+
+CANCEL ..> STOP : <<extend>>
+
+RESTART ..> STOP : <<include>>
+RESTART ..> LIST : <<include>>
+
+TERM --> Ollama
+
+@enduml

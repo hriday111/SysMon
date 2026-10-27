@@ -1,0 +1,43 @@
+@startuml
+
+left to right direction
+
+actor "Tier 1 Admin" as A1 #blue
+actor "Tier 2 Admin" as A2 #red
+actor "Tier 3 Admin" as A3 #green
+actor "Ollama" as Ollama
+
+rectangle "SysMon - LLM Orchestration & Frontend" {
+    usecase "Spawn LLM Server" as SPAWN
+    usecase "Open LLM Console" as OPEN
+    usecase "Ensure Ollama Runtime" as ENSURE
+    usecase "Paste HuggingFace\nModel Repo" as PASTE
+    usecase "Configure Runtime\nParameters" as CONFIG
+    usecase "Set Context Length" as CTX
+    usecase "Set CPU/GPU Split" as NGL
+    usecase "Set Server Port" as PORT
+    usecase "Validate Against\nCompute Group" as VALIDATE
+    usecase "Start Ollama Server\non Port" as START
+    usecase "Show Compute\nGroup Error" as ERR
+}
+
+A1 --> SPAWN #line:blue;
+A2 --> SPAWN #line:red;
+A3 --> SPAWN #line:green;
+
+SPAWN ..> OPEN : <<include>>
+SPAWN ..> ENSURE : <<include>>
+SPAWN ..> PASTE : <<include>>
+SPAWN ..> CONFIG : <<include>>
+SPAWN ..> VALIDATE : <<include>>
+SPAWN ..> START : <<include>>
+
+CONFIG ..> CTX : <<include>>
+CONFIG ..> NGL : <<include>>
+CONFIG ..> PORT : <<include>>
+
+ERR ..> VALIDATE : <<extend>>
+
+START --> Ollama
+
+@enduml
