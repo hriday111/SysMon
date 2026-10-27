@@ -1,0 +1,36 @@
+@startuml
+
+left to right direction
+
+actor "Tier 1 Admin" as A1 #blue
+actor "Tier 2 Admin" as A2 #red
+actor "Tier 3 Admin" as A3 #green
+
+rectangle "SysMon's Resource and Storage Group Management System (Backend & Frontend)" {
+    usecase "Create RG" as CR
+    usecase "Delete RG" as DR
+    usecase "Modify RG" as MR
+    usecase "Use RG" as UR
+
+    usecase "Set CPU limits" as CPU
+    usecase "Set GPU limits" as GPU
+    usecase "Set RAM limits" as RAM
+}
+
+A1 --> CR #line:blue;
+A1 --> DR #line:blue;
+A1 --> MR #line:blue;
+A1 --> UR #line:blue;
+
+A2 --> CR #line:red;
+A2 --> DR #line:red;
+A2 --> MR #line:red;
+A2 --> UR #line:red;
+
+A3 --> UR #line:green;
+
+MR ..> CR : <<include>>
+CPU ..> MR : <<include>>
+GPU ..> MR : <<include>>
+RAM ..> MR : <<include>>
+@enduml

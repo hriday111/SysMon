@@ -1,0 +1,32 @@
+@startuml
+
+left to right direction
+
+actor "Tier 1 Admin" as A1 #blue
+actor "Tier 2 Admin" as A2 #red
+actor "Tier 3 Admin" as A3 #green
+
+rectangle "SysMon's Resource and Storage Group Management System (Backend & Frontend)" {
+    usecase "Create SG" as CS
+    usecase "Delete SG" as DS
+    usecase "Modify SG" as MS
+    usecase "Use RG" as US
+
+    usecase "Set storage quotas" as QUOTA
+}
+
+A1 --> CS #line:blue;
+A1 --> DS #line:blue;
+A1 --> MS #line:blue;
+A1 --> US #line:blue;
+
+A2 --> CS #line:red;
+A2 --> DS #line:red;
+A2 --> MS #line:red;
+A2 --> US #line:red;
+
+A3 --> US #line:green;
+
+MS ..> CS : <<include>>
+QUOTA ..> MS : <<include>>
+@enduml
