@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase { BackgroundColor #EFF6FF; BorderColor #2563EB; ArrowColor #64748B }
+actor "Admin (Tier 1 or Tier 2)" as Admin
+rectangle "SysMon — Existing Compute and Storage Group Management" {
+  usecase "Manage Existing Group" as M
+  usecase "Modify Compute Group\n(CPU, RAM, GPU)" as C
+  usecase "Modify Storage Group\n(Storage Quota)" as S
+  usecase "Validate New Configuration" as V
+  usecase "Apply Group Changes" as A
+  usecase "Reject Invalid Configuration" as R
+}
+Admin --> M
+C -|> M
+S -|> M
+M ..> V : <<include>>
+M ..> A : <<include>>
+R ..> V : <<extend>>
+[configuration invalid]
+@enduml
