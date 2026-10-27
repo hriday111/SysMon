@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+
+actor "Admin (Tier 1)" as Admin
+
+rectangle "SysMon - Authentication System & Frontend" {
+    usecase "Open Users Panel" as UC1
+    usecase "Manage Access" as UC2
+    usecase "Select User" as UC3
+    usecase "Delete User" as UC4
+    usecase "Request Confirmation" as UC5
+    usecase "Enter Admin Password" as UC6
+    usecase "Confirm Deletion" as UC7
+    usecase "Delete User Account" as UC8
+    usecase "Cancel Deletion" as UC9
+}
+
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC6
+Admin --> UC7
+Admin --> UC9
+
+UC2 ..> UC1 : <<include>>
+UC4 ..> UC3 : <<include>>
+UC4 ..> UC5 : <<include>>
+UC4 ..> UC6 : <<include>>
+UC4 ..> UC7 : <<include>>
+UC8 ..> UC4 : <<extend>>
+UC9 ..> UC4 : <<extend>>
+
+@enduml
+
