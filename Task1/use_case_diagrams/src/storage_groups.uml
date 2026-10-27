@@ -6,11 +6,11 @@ actor "Tier 1 Admin" as A1 #blue
 actor "Tier 2 Admin" as A2 #red
 actor "Tier 3 Admin" as A3 #green
 
-rectangle "SysMon's Resource and Storage Group Management System (Backend & Frontend)" {
+rectangle "SysMon's Compute and Storage Group Management System (Backend & Frontend)" {
     usecase "Create SG" as CS
     usecase "Delete SG" as DS
     usecase "Modify SG" as MS
-    usecase "Use RG" as US
+    usecase "Use SG" as US
 
     usecase "Set storage quotas" as QUOTA
 }

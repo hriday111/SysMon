@@ -6,11 +6,11 @@ actor "Tier 1 Admin" as A1 #blue
 actor "Tier 2 Admin" as A2 #red
 actor "Tier 3 Admin" as A3 #green
 
-rectangle "SysMon's Resource and Storage Group Management System (Backend & Frontend)" {
-    usecase "Create RG" as CR
-    usecase "Delete RG" as DR
-    usecase "Modify RG" as MR
-    usecase "Use RG" as UR
+rectangle "SysMon's Compute and Storage Group Management System (Backend & Frontend)" {
+    usecase "Create CG" as CR
+    usecase "Delete CG" as DR
+    usecase "Modify CG" as MR
+    usecase "Use CG" as UR
 
     usecase "Set CPU limits" as CPU
     usecase "Set GPU limits" as GPU

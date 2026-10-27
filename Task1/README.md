@@ -25,7 +25,7 @@ infrastructure.
   Features manual container creation via Compose files, alongside a
   visual UI builder that auto-generates Compose files.
 
-- **Resource Governance (Resource Groups):** Tier 1 admins can create
+- **Resource Governance (Compute Groups):** Tier 1 admins can create
   profiles limiting compute resources (e.g., thread limits, RAM caps,
   GPU access restrictions) enforced at the cgroup level via Compose
   deployments.
@@ -48,10 +48,10 @@ infrastructure.
     wrapper of a different system, equating support with basic
     functionality.
 
-  - **Functional Resource Groups:** Enforceable resource access rules
+  - **Functional Compute Groups:** Enforceable resource access rules
     are mandatory in a team-based environment.
 
-  - **Functional Storage Groups:** As with Resource Groups, lacking this
+  - **Functional Storage Groups:** As with Compute Groups, lacking this
     functionality introduces potential security risks.
 
 - **Should have:**
@@ -78,7 +78,7 @@ infrastructure.
 # User Stories
 
 - **US1 (Resource Governance):** As a Tier 1 admin, I want to create a
-  "Basic Resource Group" that restricts deployments to 2 CPU cores and
+  "Basic Compute Group" that restricts deployments to 2 CPU cores and
   4GB of RAM, so that lower-tier users cannot accidentally exhaust the
   host server's resources.
 
@@ -88,7 +88,7 @@ infrastructure.
   without filling up the host system's root drive.
 
 - **US3 (Visual Deployment):** As a Tier 3 (newer) admin, I want to
-  visually attach a Docker image and select a pre-approved Resource
+  visually attach a Docker image and select a pre-approved Compute
   Group and Storage Group, so that the system automatically generates a
   compliant Compose file.
 
@@ -105,15 +105,15 @@ infrastructure.
 | **Primary Actor** | Admin (Tier 2 or Tier 3) |
 | **Scope** | SysMon Orchestration & Frontend Module |
 | **Level** | User Goal |
-| **Brief Description** | The admin configures a new container via the UI, assigning it to a specific Resource Group and Storage Group. SysMon generates a Compose file injecting these limits and deploys it. |
-| **Preconditions** | The admin is authenticated. Resource Groups and Storage Groups have been previously defined by a Tier 1 admin. |
+| **Brief Description** | The admin configures a new container via the UI, assigning it to a specific Compute Group and Storage Group. SysMon generates a Compose file injecting these limits and deploys it. |
+| **Preconditions** | The admin is authenticated. Compute Groups and Storage Groups have been previously defined by a Tier 1 admin. |
 | **Success Guarantee** | A Compose file is generated containing `deploy.resources` limits, volume paths are validated against the Storage Group, and the container is running. |
 
 ### Main Success Scenario
 
 1. Admin navigates to "Create Container" and selects "Visual Builder".
 2. Admin inputs the image repository tag.
-3. Admin selects an assigned Resource Group
+3. Admin selects an assigned Compute Group
 4. Admin maps persistent data to an assigned Storage Group folder.
 5. Admin selects the target engine (Docker or Podman) and clicks Deploy.
 6. SysMon Backend injects cgroup limits and approved host paths into a generated `docker-compose.yml` string.
@@ -201,19 +201,19 @@ infrastructure.
 
 ### Variations
 
-- 4. The admin may select one of: container, resource group, storage group.
+- 4. The admin may select one of: container, compute group, storage group.
 - 5. The admin may modify the permissions to: see, use, modify, delete, and create containers and groups.
 
 *Use Case: Managing User Access*
 
-## 5. Creating Resource and Storage Groups
+## 5. Creating Compute and Storage Groups
 
 | Field | Description |
 | --- | --- |
 | **Primary Actor** | Admin (Tier 1 and 2) |
 | **Scope** | Backend/Orchestration & Frontend Module |
 | **Level** | User Goal |
-| **Brief Description** | The admin creates a resource or storage group with a custom configuration. |
+| **Brief Description** | The admin creates a compute or storage group with a custom configuration. |
 | **Preconditions** | The admin is authenticated and has the necessary permissions. There exists a SysMon environment. |
 | **Success Condition** | The group is successfully created. |
 | **Failure Condition** | No group is created. |
@@ -221,7 +221,7 @@ infrastructure.
 ### Main Success Scenario
 
 1. The admin opens the "Manage Groups" panel.
-2. They select the "Create New Resource Group" option.
+2. They select the "Create New Compute Group" option.
 3. They specify the RAM, CPU, and GPU restrictions enforced within the group.
 4. The system successfully verifies the validity of the given configuration, ensuring the given values do not exceed hardware capabilities.
 5. They commit the introduced changes.
@@ -233,16 +233,16 @@ infrastructure.
 - 3a. They specify size quota enforced within the group (step 2a is a prerequisite).
 - 4a. The system rejects the provided configuration (leads back to step 3/3a).
 
-*Use Case: Creating Resource and Storage Groups*
+*Use Case: Creating Compute and Storage Groups*
 
-## 6. Deleting Resource and Storage Groups
+## 6. Deleting Compute and Storage Groups
 
 | Field | Description |
 | --- | --- |
 | **Primary Actor** | Admin (Tier 1 and 2) |
 | **Scope** | Backend/Orchestration & Frontend Module |
 | **Level** | User Goal |
-| **Brief Description** | The admin deletes an unused resource or storage group. |
+| **Brief Description** | The admin deletes an unused compute or storage group. |
 | **Preconditions** | The admin is authenticated and has the necessary permissions. There exists a SysMon environment and the appropriate group. |
 | **Success Condition** | The group is successfully deleted. |
 | **Failure Condition** | No group is deleted. |
@@ -261,19 +261,19 @@ infrastructure.
 
 ### Variations
 
-- 2. The admin may select either of: resource group, storage group.
+- 2. The admin may select either of: compute group, storage group.
 
-*Use Case: Deleting Resource and Storage Groups*
+*Use Case: Deleting Compute and Storage Groups*
 
-## 7. Managing Existing Resource and Storage Groups
+## 7. Managing Existing Compute and Storage Groups
 
 | Field | Description |
 | --- | --- |
 | **Primary Actor** | Admin (Tier 1 and 2) |
 | **Scope** | Backend/Orchestration & Frontend Module |
 | **Level** | User Goal |
-| **Brief Description** | The admin modifies the properties of a chosen resource or storage group. |
-| **Preconditions** | The admin is authenticated and has the necessary permissions. There exists a SysMon environment and the appropriate resource or storage group. |
+| **Brief Description** | The admin modifies the properties of a chosen compute or storage group. |
+| **Preconditions** | The admin is authenticated and has the necessary permissions. There exists a SysMon environment and the appropriate compute or storage group. |
 | **Success Condition** | The changes become functional the moment they are accepted. |
 | **Failure Condition** | No changes are introduced. |
 
@@ -292,10 +292,10 @@ infrastructure.
 
 ### Variations
 
-- 2. The admin may select one of: resource group, storage group.
-- 3. The changes may concern RAM, CPU, and GPU restrictions for resource groups and quotas for storage groups.
+- 2. The admin may select one of: compute group, storage group.
+- 3. The changes may concern RAM, CPU, and GPU restrictions for compute groups and quotas for storage groups.
 
-*Use Case: Managing Existing Resource and Storage Groups*
+*Use Case: Managing Existing Compute and Storage Groups*
 
 # Class Diagram Specification
 
