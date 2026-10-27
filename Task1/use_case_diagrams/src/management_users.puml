@@ -2,7 +2,11 @@
 left to right direction
 skinparam shadowing false
 skinparam packageStyle rectangle
-skinparam usecase { BackgroundColor #EFF6FF; BorderColor #2563EB; ArrowColor #64748B }
+skinparam usecase {
+  BackgroundColor #EFF6FF
+  BorderColor #2563EB
+  ArrowColor #64748B
+}
 actor "Admin (Tier 1)" as Admin
 rectangle "SysMon — Existing User Management" {
   usecase "Manage Existing User Access" as M
@@ -22,5 +26,7 @@ M ..> T : <<include>>
 M ..> A : <<include>>
 D ..> C : <<include>>
 X ..> D : <<extend>>
-[admin cancels]
+note on link
+  admin cancels
+end note
 @enduml
