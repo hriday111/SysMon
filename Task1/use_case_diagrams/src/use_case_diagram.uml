@@ -23,7 +23,7 @@ package "Domain Models" {
         + updateTier(newTier : Integer) : void
     }
 
-    class ResourceGroup {
+    class ComputeGroup {
         + groupId : String
         + name : String
         + maxCpuCores : Float
@@ -82,12 +82,12 @@ package "Services" {
 
 ' Layout aligned with SE1_Report1.pdf Figure 1
 ContainerConfig -[hidden]right- User
-ResourceGroup -[hidden]right- StorageGroup
+ComputeGroup -[hidden]right- StorageGroup
 StorageGroup -[hidden]right- ComposeDeployment
 ComposeDeployment -[hidden]right- Container
 StorageService -[hidden]right- OrchestrationService
 
-ContainerConfig "*" -- "1" ResourceGroup : constrained by >
+ContainerConfig "*" -- "1" ComputeGroup : constrained by >
 ContainerConfig "*" -- "1" StorageGroup : stores data in >
 ContainerConfig ..> ComposeDeployment : generates >
 User "1" -- "0..*" Container : manages >

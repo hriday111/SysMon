@@ -127,6 +127,8 @@ infrastructure.
 
 *Use Case: Visual Configuration with Governance*
 
+![Overview use case diagram](./use_case_diagrams/use_case_diagram.svg)
+
 ## 2. Creating New Users
 
 | Field | Description |
@@ -148,6 +150,8 @@ infrastructure.
 5. The system creates the new user with no permissions.
 
 *Use Case: Creating New Users*
+
+![Creating new users](./use_case_diagrams/creating_users.svg)
 
 ## 3. Deleting Users
 
@@ -171,7 +175,9 @@ infrastructure.
 
 - 2a. They instead cancel the operation, leading to no changes being done.
 
-*Use Case: Creating New Users*
+*Use Case: Deleting Users*
+
+![Deleting users](./use_case_diagrams/deleting_users.svg)
 
 ## 4. Managing User Access
 
@@ -206,6 +212,8 @@ infrastructure.
 
 *Use Case: Managing User Access*
 
+![Managing existing user access](./use_case_diagrams/management_users.svg)
+
 ## 5. Creating Compute and Storage Groups
 
 | Field | Description |
@@ -234,6 +242,10 @@ infrastructure.
 - 4a. The system rejects the provided configuration (leads back to step 3/3a).
 
 *Use Case: Creating Compute and Storage Groups*
+
+![Compute groups](./use_case_diagrams/compute_groups.svg)
+
+![Storage groups](./use_case_diagrams/storage_groups.svg)
 
 ## 6. Deleting Compute and Storage Groups
 
@@ -297,6 +309,8 @@ infrastructure.
 
 *Use Case: Managing Existing Compute and Storage Groups*
 
+![Managing existing compute and storage groups](./use_case_diagrams/management_compute.svg)
+
 ## 8. Spawn LLM Server
 
 | Field | Description |
@@ -326,10 +340,25 @@ infrastructure.
 
 *Use Case: Spawn LLM Server*
 
-# Class Diagram Specification
+![Spawn LLM server](./use_case_diagrams/spawn_llm.svg)
 
-The following diagram presents the conceptual class structures focusing
-on visual builder configurations, Compose deployments, and
-resource/storage governance.
+![Ensure Ollama runtime](./use_case_diagrams/ensure_ollama.svg)
 
-![SysMon Domain and Service Class Diagram](./use_case_diagram.svg)
+![Manage LLM instances](./use_case_diagrams/manage_llm_instances.svg)
+
+# Use Case Diagrams
+
+Sources live in [`use_case_diagrams/src/`](./use_case_diagrams/src/) and are compiled to SVG by the [Compile UML diagrams](../.github/workflows/compile-uml.yml) workflow. All current diagrams:
+
+| Diagram | Source | Description |
+| --- | --- | --- |
+| [use_case_diagram.svg](./use_case_diagrams/use_case_diagram.svg) | `use_case_diagram.uml` | System overview |
+| [creating_users.svg](./use_case_diagrams/creating_users.svg) | `creating_users.uml` | Creating new users |
+| [deleting_users.svg](./use_case_diagrams/deleting_users.svg) | `deleting_users.uml` | Deleting users |
+| [management_users.svg](./use_case_diagrams/management_users.svg) | `management_users.puml` | Managing user access |
+| [compute_groups.svg](./use_case_diagrams/compute_groups.svg) | `compute_groups.uml` | Compute groups |
+| [storage_groups.svg](./use_case_diagrams/storage_groups.svg) | `storage_groups.uml` | Storage groups |
+| [management_compute.svg](./use_case_diagrams/management_compute.svg) | `management_compute.puml` | Managing existing groups |
+| [spawn_llm.svg](./use_case_diagrams/spawn_llm.svg) | `spawn_llm.uml` | Spawn LLM server |
+| [ensure_ollama.svg](./use_case_diagrams/ensure_ollama.svg) | `ensure_ollama.uml` | Ensure Ollama runtime |
+| [manage_llm_instances.svg](./use_case_diagrams/manage_llm_instances.svg) | `manage_llm_instances.uml` | Manage running LLM instances |
