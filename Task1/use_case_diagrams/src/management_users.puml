@@ -1,0 +1,26 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase { BackgroundColor #EFF6FF; BorderColor #2563EB; ArrowColor #64748B }
+actor "Admin (Tier 1)" as Admin
+rectangle "SysMon — Existing User Management" {
+  usecase "Manage Existing User Access" as M
+  usecase "Grant Permissions" as G
+  usecase "Revoke Permissions" as R
+  usecase "Select Target Resource\n(Container / Compute Group / Storage Group)" as T
+  usecase "Apply Permission Changes" as A
+  usecase "Delete Existing User" as D
+  usecase "Confirm Deletion\n(Enter Admin Password)" as C
+  usecase "Cancel Deletion" as X
+}
+Admin --> M
+Admin --> D
+G -|> M
+R -|> M
+M ..> T : <<include>>
+M ..> A : <<include>>
+D ..> C : <<include>>
+X ..> D : <<extend>>
+[admin cancels]
+@enduml
