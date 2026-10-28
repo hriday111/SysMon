@@ -139,6 +139,8 @@ jobs:
           set -euo pipefail
 
           pdf_opts='{"format":"A4","margin":{"top":"20mm","right":"15mm","bottom":"20mm","left":"15mm"},"printBackground":true}'
+          # GitHub-hosted runners disable the Chromium sandbox; required for Puppeteer.
+          launch_opts='{"args":["--no-sandbox","--disable-setuid-sandbox"]}'
 
           for task in ${{ steps.tasks.outputs.tasks }}; do
             echo "::group::PDF for $task"
@@ -154,7 +156,9 @@ jobs:
 
             (
               cd "$task"
-              npx --yes md-to-pdf README.md --pdf-options "$pdf_opts"
+              npx --yes md-to-pdf README.md \
+                --pdf-options "$pdf_opts" \
+                --launch-options "$launch_opts"
               mv -f README.pdf "$out"
               ls -lh "$out"
             )
