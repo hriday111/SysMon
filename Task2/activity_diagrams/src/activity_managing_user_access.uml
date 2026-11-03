@@ -3,6 +3,8 @@ start
 - Open "Users" panel
 - Select "Manage Access"
 - Select a user
+if (Is the user's admin tier modified?) then (yes)
+else (no)
 switch(Choose object type)
 case(compute group)
   :Show compute groups;
@@ -11,8 +13,7 @@ case(container)
 case(storage group)
   :Show storage groups;
 endswitch
-switch(Is an object instance selected?)
-case(yes)
+if(Is an object instance selected?) then (yes)
 fork
   :Change
 object visibility;
@@ -26,9 +27,10 @@ fork again
   :Change permission
 to delete object;
 end fork
-case(no)
+else (no)
 :Change object creation permissions;
-endswitch
-- Commit changes
+endif
+endif
+- Confirm changes
 stop
 @enduml

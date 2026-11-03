@@ -1,0 +1,40 @@
+@startuml
+hide empty description
+[*] --> Initialized: "Manage Access" selected
+Initialized --> Target: User selected
+Target --> Context: Object family selected
+Context --> Instance: Object instance selected
+
+Target --> Confirm: Change user's tier
+Context --> Confirm: Change permissions
+Instance --> Confirm: Change permissions
+
+Initialized --> Cancel: Close panel
+Target --> Cancel: Cancel changes
+Context --> Cancel: Cancel changes
+Instance --> Cancel: Cancel changes
+
+Confirm --> Cancel: Invalid changes detected
+Confirm --> End: Changes accepted
+
+Initialized: A modification form has been created.
+
+Target: Allows for changes to the user's admin tier.
+state "Target Chosen" as Target
+
+Context: Allows for creation permissions modification\nand object instance selection.
+state "Context Chosen" as Context
+
+Instance: Allows for changes to permissions to\nsee, use, modify, and delete\nthe chosen object by the chosen user.
+state "Instance Chosen" as Instance
+
+End: The form passed SysMon's internal checks\nand the changes within are introduced into the system.
+state "Changes introduced" as End
+
+Confirm: Allows the administrator\nto review the changes before committing.
+state "Pending Review" as Confirm
+
+Cancel: The operation has been cancelled\nand the form is marked for deletion.
+state "Operation Aborted" as Cancel
+
+@enduml
