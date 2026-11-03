@@ -1,0 +1,34 @@
+@startuml
+start
+- Open "Users" panel
+- Select "Manage Access"
+- Select a user
+switch(Choose object type)
+case(compute group)
+  :Show compute groups;
+case(container)
+  :Show containers;
+case(storage group)
+  :Show storage groups;
+endswitch
+switch(Is an object instance selected?)
+case(yes)
+fork
+  :Change
+object visibility;
+fork again
+  :Change permission
+to use object;
+fork again
+  :Change permission
+to modify object;
+fork again
+  :Change permission
+to delete object;
+end fork
+case(no)
+:Change object creation permissions;
+endswitch
+- Commit changes
+stop
+@enduml
