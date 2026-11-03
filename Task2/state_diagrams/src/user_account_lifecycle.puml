@@ -1,0 +1,25 @@
+@startuml 1
+title SysMon - User Account State Diagram
+
+[*] --> Creating : Admin submits new user
+
+state Creating
+state Active
+state DeletionPending
+state Deleted
+
+Creating --> Active : Account created\nwith no permissions
+Creating --> [*] : Creation fails
+
+Active --> Active : updateTier(newTier)
+Active --> Active : Grant or revoke permissions
+
+Active --> DeletionPending : Admin selects Delete User
+
+DeletionPending --> Active : Admin cancels
+DeletionPending --> Active : Password verification fails
+DeletionPending --> Deleted : Password verified\nand deletion confirmed
+
+Deleted --> [*]
+
+@enduml

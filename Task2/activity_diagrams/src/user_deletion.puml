@@ -1,0 +1,37 @@
+@startuml
+title SysMon - User Deletion Activity Diagram
+
+|Admin (Tier 1)|
+start
+:Open Users panel;
+:Select Manage Access;
+:Select existing user;
+:Select Delete User;
+
+|SysMon Frontend|
+:Display deletion confirmation panel;
+
+|Admin (Tier 1)|
+if (Confirm deletion?) then (Yes)
+  :Enter admin password;
+  :Select Confirm;
+
+  |SysMon Authentication System|
+  :Verify administrator password;
+
+  if (Password correct?) then (Yes)
+    :Delete selected user account;
+    |SysMon Frontend|
+    :Display deletion success;
+  else (No)
+    :Reject deletion request;
+    :Display authentication error;
+  endif
+
+else (No)
+  :Cancel deletion;
+  :Leave user account unchanged;
+endif
+
+stop
+@enduml

@@ -1,0 +1,52 @@
+@startuml
+title SysMon - Container Deployment Activity Diagram
+
+|Admin (Tier 2 or 3)|
+start
+:Open Create Container;
+:Select Visual Builder;
+:Enter image repository tag;
+:Select assigned Compute Group;
+:Map persistent data to
+assigned Storage Group folder;
+:Select Docker or Podman;
+:Click Deploy;
+
+|SysMon Backend|
+:Read container configuration;
+:Validate Storage Group quota;
+
+if (Storage Group quota exceeded?) then (Yes)
+  :Halt Compose generation;
+  :Notify admin that
+  storage pool is full;
+  stop
+else (No)
+  :Inject Compute Group
+  resource limits;
+  :Insert approved Storage Group
+  host paths;
+  :Generate docker-compose.yml;
+endif
+
+:Request deployment via
+selected engine API;
+
+|Container Engine|
+if (Engine daemon reachable?) then (Yes)
+  :Execute container deployment;
+  :Start container;
+  |SysMon Backend|
+  :Begin streaming container telemetry;
+  |Admin (Tier 2 or 3)|
+  :View running container;
+  stop
+else (No)
+  |SysMon Backend|
+  :Save generated Compose file as draft;
+  :Notify admin that engine
+  daemon is unreachable;
+  stop
+endif
+
+@enduml

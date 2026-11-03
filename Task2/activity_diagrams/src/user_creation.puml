@@ -1,0 +1,40 @@
+
+@startuml
+title SysMon - User Creation Activity Diagram
+
+|Admin (Tier 1)|
+start
+:Open Users panel;
+:Select Add User;
+
+|SysMon Frontend|
+:Display user creation form;
+
+|Admin (Tier 1)|
+:Enter username, password and tier;
+:Commit changes;
+
+|SysMon Authentication System|
+:Validate supplied user data;
+
+while (User data invalid?) is (Yes)
+  |SysMon Frontend|
+  :Display validation error;
+  |Admin (Tier 1)|
+  :Correct username, password or tier;
+  :Commit changes;
+  |SysMon Authentication System|
+  :Validate supplied user data;
+endwhile (No)
+
+:Create new user account;
+:Assign selected admin tier;
+:Initialize account with no permissions;
+
+|SysMon Frontend|
+:Display creation success;
+
+|Admin (Tier 1)|
+:View newly created account;
+stop
+@enduml
