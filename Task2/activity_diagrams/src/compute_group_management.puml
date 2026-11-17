@@ -1,0 +1,90 @@
+@startuml
+title SysMon - Compute Group Management Activity Diagram
+
+|Admin (Tier 1 or 2)|
+start
+:Open Manage Groups panel;
+
+switch (Chosen action?)
+case (Create)
+  :Select Create New Compute Group;
+  |SysMon Frontend|
+  :Display creation form;
+  |Admin (Tier 1 or 2)|
+  :Enter name, CPU, RAM and GPU limits;
+  :Commit changes;
+
+  |SysMon Backend|
+  :Validate limits against host hardware;
+
+  while (Limits exceed host or invalid?) is (Yes)
+    :Reject configuration;
+    |SysMon Frontend|
+    :Show validation error;
+    |Admin (Tier 1 or 2)|
+    if (Cancel creation?) then (Yes)
+      stop
+    else (No)
+      :Correct name or limits;
+      :Commit changes;
+      |SysMon Backend|
+      :Validate limits against host hardware;
+    endif
+  endwhile (No)
+
+  :Create Compute Group;
+  :List group as Active;
+  stop
+
+case (Modify)
+  :Select existing Compute Group;
+  :Edit CPU, RAM and/or GPU limits;
+  :Confirm changes;
+
+  |SysMon Backend|
+  :Validate new limits against host hardware;
+
+  if (New limits invalid?) then (Yes)
+    :Reject configuration;
+    |SysMon Frontend|
+    :Show validation error;
+    stop
+  else (No)
+    :Apply updated limits to group;
+    note right
+      Open question from US1:
+      whether running containers
+      bound to this group are
+      restarted automatically.
+    end note
+    stop
+  endif
+
+case (Delete)
+  :Select existing Compute Group;
+  :Select Delete Group;
+
+  |SysMon Frontend|
+  :Display deletion confirmation;
+
+  |Admin (Tier 1 or 2)|
+  if (Confirm deletion?) then (No)
+    :Cancel deletion;
+    stop
+  else (Yes)
+    |SysMon Backend|
+    :Check whether group is still in use;
+
+    if (Group has assigned users
+    or running deployments?) then (Yes)
+      :Reject deletion;
+      :Notify admin that group is in use;
+      stop
+    else (No)
+      :Delete Compute Group;
+      stop
+    endif
+  endif
+endswitch
+
+@enduml

@@ -13,7 +13,8 @@ Each user story from checkpoint 1 is shown with its reverse side: acceptance cri
 | **Priority** | Must have (Functional Compute Groups) |
 | **Estimate** | 5 story points |
 | **Related Use Cases** | 5. Creating Compute and Storage Groups, 6. Deleting Compute and Storage Groups, 7. Managing Existing Compute and Storage Groups |
-| **Related Activities** | 2.1. Container deployment (Compute Group limits are injected as `deploy.resources`) |
+| **Related Activities** | 2.1. Container deployment (Compute Group limits are injected as `deploy.resources`), 2.5. Compute Group management |
+| **Related States** | 3.3. Compute Group lifecycle |
 | **Depends On** | Tier-based authentication (Tier 1 or 2 may manage groups) |
 
 ### Acceptance Criteria
@@ -124,6 +125,42 @@ Each user story from checkpoint 1 is shown with its reverse side: acceptance cri
 
 - Can a Tier 1 admin deploy a stack without any group (unrestricted)?
 - How are secrets and `.env` files referenced by the Compose file handled?
+
+## 1.5. US5 (Spawn LLM Server)
+
+**Front:** As an authenticated admin (any tier), I want to spawn an Ollama LLM server from a HuggingFace model under my assigned Compute Group limits, so that I can run local inference without manually installing or tuning the runtime on the host.
+
+| Field | Description |
+| --- | --- |
+| **Priority** | Should have (LLM orchestration on governed compute) |
+| **Estimate** | 8 story points |
+| **Related Use Cases** | 8. Spawn LLM Server (Ensure Ollama Runtime, Manage LLM Instances) |
+| **Related Activities** | 2.5. Spawn LLM server, 2.6. Compute Group management (limits consumed as argument) |
+| **Related States** | 3.3. Compute Group lifecycle, 3.4. LLM Server Instance lifecycle |
+| **Depends On** | US1 (assigned Compute Group), host package install rights for first-time Ollama setup |
+
+### Acceptance Criteria
+
+1. The admin opens the LLM console; if Ollama is missing, SysMon installs it before continuing.
+2. The admin pastes a HuggingFace model repository, sets context length, CPU/GPU split and port, then clicks Spawn.
+3. SysMon validates estimated model requirements against the admin's assigned Compute Group.
+4. On success, Ollama listens on the chosen port with the configured model; the instance appears in the LLM console.
+5. The admin can later stop or restart a listed instance from the console.
+
+### Edge Cases
+
+- Ollama install fails: spawn aborts and the admin is notified; no server is started.
+- Model exceeds Compute Group limits (RAM, GPU, CPU): spawn is refused with a Compute Group error.
+- Chosen port is already in use: spawn is refused and the admin is asked to pick another port.
+- Server start fails after validation: instance is marked failed and the admin is notified.
+- Stop is cancelled during confirmation: the running instance is left unchanged.
+
+### Open Questions
+
+- How are model download failures and partial pulls surfaced in the console?
+- Should Tier 3 admins be limited to models already cached on the host?
+- Does restart reuse the same port and parameters, or reopen the configuration form?
+
 # 2. Activity diagrams
 
 ## 2.1. Container deployment
@@ -142,6 +179,18 @@ Each user story from checkpoint 1 is shown with its reverse side: acceptance cri
 
 ![activity_managing_user_access](./activity_diagrams/activity_managing_user_access.svg)
 
+## 2.5. Spawn LLM server
+
+![spawn_llm](./activity_diagrams/spawn_llm.svg)
+
+Covers the main path (ensure Ollama → configure → validate against Compute Group → start) and abnormal paths: install failure, Compute Group rejection, port conflict, and start failure.
+
+## 2.6. Compute Group management
+
+![compute_group_management](./activity_diagrams/compute_group_management.svg)
+
+Covers create, modify and delete. Abnormal paths: invalid host limits, cancel, and reject delete when the group is still in use.
+
 # 3. State diagrams
 
 ## 3.1. User account lifecycle
@@ -151,3 +200,15 @@ Each user story from checkpoint 1 is shown with its reverse side: acceptance cri
 ## 3.2. Managing user access
 
 ![state_managing_user_access](./state_diagrams/state_managing_user_access.svg)
+
+## 3.3. Compute Group lifecycle
+
+![compute_group_lifecycle](./state_diagrams/compute_group_lifecycle.svg)
+
+Key business object for resource governance. Transitions align with `createGroup`, `setLimits`, `modifyGroup` / `applyChanges`, `deleteGroup` / `confirmDelete`, and `groupStillInUse` (atypical: delete rejected while assigned or deployed).
+
+## 3.4. LLM Server Instance lifecycle
+
+![llm_server_lifecycle](./state_diagrams/llm_server_lifecycle.svg)
+
+Key business object for LLM orchestration. Transitions align with `ensureOllama` / `installOllama`, validation against a Compute Group argument, `startOllamaServer`, and `stopLLMServer` / `restartLLMServer` (atypical: install fail, limit exceed, port in use, start fail, cancel stop).

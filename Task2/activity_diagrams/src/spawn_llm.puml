@@ -1,0 +1,59 @@
+@startuml
+title SysMon - Spawn LLM Server Activity Diagram
+
+|Admin (Tier 1, 2 or 3)|
+start
+:Open LLM console;
+:Paste HuggingFace model repository;
+:Set context length,
+CPU/GPU split and server port;
+:Click Spawn;
+
+|SysMon Backend|
+:Ensure Ollama runtime is available;
+
+if (Ollama installed?) then (No)
+  :Install Ollama;
+  if (Install succeeded?) then (No)
+    :Notify admin that
+    Ollama install failed;
+    stop
+  else (Yes)
+  endif
+else (Yes)
+endif
+
+:Estimate model resource requirements;
+:Load admin's assigned Compute Group;
+
+if (Model fits Compute Group
+limits?) then (No)
+  :Show Compute Group error
+  (RAM / GPU / CPU exceeded);
+  stop
+else (Yes)
+endif
+
+if (Chosen port already in use?) then (Yes)
+  :Notify admin that port is unavailable;
+  stop
+else (No)
+endif
+
+|Ollama|
+:Start Ollama server on chosen port
+with configured model and parameters;
+
+|SysMon Backend|
+if (Server started successfully?) then (No)
+  :Notify admin of spawn failure;
+  stop
+else (Yes)
+  :Register running LLM instance;
+  |Admin (Tier 1, 2 or 3)|
+  :View LLM console with
+  listening endpoint;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+title SysMon - LLM Server Instance State Diagram
+
+[*] --> RuntimeCheck : Admin clicks Spawn
+
+state RuntimeCheck
+state Installing
+state Configuring
+state Validating
+state Starting
+state Running
+state Failed
+state Stopping
+state Stopped
+
+RuntimeCheck --> Installing : Ollama missing
+RuntimeCheck --> Configuring : Ollama already available
+Installing --> Configuring : installOllama() succeeds
+Installing --> Failed : installOllama() fails
+
+Configuring --> Validating : model repo and\nruntime parameters set
+
+Validating --> Starting : fitsComputeGroup()\nand portAvailable()
+Validating --> Failed : exceeds Compute Group\nor port in use
+
+Starting --> Running : startOllamaServer() succeeds
+Starting --> Failed : startOllamaServer() fails
+
+Running --> Stopping : stopLLMServer() confirmed
+Running --> Running : restartLLMServer()\n(stop then start)
+
+Stopping --> Stopped : terminateProcess()
+Stopping --> Running : Admin cancels stop
+
+Failed --> [*]
+Stopped --> [*]
+
+note right of Running
+  Instance registered in LLM console.
+  Methods: ensureOllama, validateAgainstGroup,
+  startOllamaServer, stopLLMServer,
+  restartLLMServer, terminateProcess.
+  Takes Compute Group as argument
+  during Validating.
+end note
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml
+title SysMon - Compute Group State Diagram
+
+[*] --> Drafting : Admin opens Create New Compute Group
+
+state Drafting
+state Active
+state Updating
+state DeletionPending
+state Deleted
+
+Drafting --> Drafting : setLimits(cpu, ram, gpu)\n/ reject if exceeding host
+Drafting --> Active : createGroup()\nlimits validated
+Drafting --> [*] : Admin cancels creation
+
+Active --> Updating : modifyGroup() selected
+Active --> DeletionPending : deleteGroup() requested
+
+Updating --> Updating : setLimits(cpu, ram, gpu)\n/ reject if exceeding host
+Updating --> Active : applyChanges()\nconfiguration accepted
+Updating --> Active : Admin cancels modification
+
+DeletionPending --> Active : Admin cancels
+DeletionPending --> Active : groupStillInUse()\n/ deletion rejected
+DeletionPending --> Deleted : confirmDelete()\ngroup unused
+
+Deleted --> [*]
+
+note right of Active
+  Key business object for
+  resource governance (US1).
+  Methods: createGroup,
+  modifyGroup, deleteGroup,
+  setLimits, groupStillInUse,
+  applyChanges, confirmDelete.
+  Consumed by container deploy
+  and LLM spawn as argument
+  (assigned Compute Group).
+end note
+
+@enduml
