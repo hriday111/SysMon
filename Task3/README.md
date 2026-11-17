@@ -29,55 +29,61 @@ The formal OpenAPI/Swagger document for these contracts is optional for this rev
 
 # Sequence diagrams
 
-## 1. User creation
+## 1. User authorization
+
+![user_authorization](./sequence_diagrams/01_login_credentials.svg)
+
+Happy path: `200` (credentials/token valid). Abnormal: `401` (unauthorized).
+
+## 2. User creation
 
 ![user_creation](./sequence_diagrams/user_creation.svg)
 
 Happy path: Tier 1 admin `POST /v1/users`. Abnormal: `401`, `403`, `422`, `409` (username taken).
 
-## 2. User deletion
+## 3. User deletion
 
 ![user_deletion](./sequence_diagrams/user_deletion.svg)
 
 Happy path: Tier 1 admin `POST /v1/users/{userId}/deletion` with `{adminPassword}`. Abnormal: cancel, `401`, `403`, `404`, `409` (self or last Tier 1).
 
-## 3. Managing user access
+## 4. Managing user access
 
 ![managing_user_access](./sequence_diagrams/managing_user_access.svg)
 
 Happy path: list/get user, then `PATCH` tier or permissions (Backend validates object IDs for compute groups, storage groups, containers). Abnormal: cancel, `401`, `403`, `404`, `422`, `409`.
 
-## 4. Container deployment
+## 5. Container deployment
 
 ![container_deployment](./sequence_diagrams/container_deployment.svg)
 
 Happy path: load groups → `POST /v1/containers` → Auth validate → Compose generation → Engine create/start → SSE telemetry. Abnormal: `401`, `403`, `404`, `422`, `409` (quota), `503` (engine timeout, draft saved).
 
-## 5. Container management
+## 6. Container management
 
 ![container_management](./sequence_diagrams/container_management.svg)
 
 Happy path: list, stop (`POST .../stop`), delete (`DELETE`). Abnormal: `401`, `403`, `404`, `409` (not running), `503` (engine unreachable). Complements deployment for the full container lifecycle.
 
-## 6. Compute group management
+## 7. Compute group management
 
 ![compute_group_management](./sequence_diagrams/compute_group_management.svg)
 
 Happy path: list, create (`POST /v1/compute-groups` with `{name, cpuCores, ramBytes, gpuCount}`), modify (`PATCH`), delete (`DELETE`). Abnormal: invalid / host-exceeding limits (`422`), name conflict (`409`), delete while in use (`409`), auth failures.
 
-## 7. Storage group management
+## 8. Storage group management
 
 ![storage_group_management](./sequence_diagrams/storage_group_management.svg)
 
 Happy path: list, create (`POST /v1/storage-groups` with `{name, quotaBytes}` → host path + quota), modify (`PATCH`), delete (`DELETE`). Abnormal: quota vs free disk (`422`), quota below `usedBytes` (`409`), delete while in use (`409`), auth failures.
 
-## 8. Spawn LLM server
+## 9. Spawn LLM server
 
 ![spawn_llm](./sequence_diagrams/spawn_llm.svg)
 
 Happy path: `POST /v1/llms` → ensure/install Ollama → validate against Compute Group → pull model → start → `201` with `{llmId, endpoint, ...}`. Abnormal: authz, missing group, invalid body, install failure (`503`), Compute Group / port conflict (`409`), pull or start failure (`502`).
 
-## 9. Manage LLM instances
+## 10. Manage LLM instances
 
 ![manage_llm_instances](./sequence_diagrams/manage_llm_instances.svg)
 

@@ -1,0 +1,53 @@
+components:
+  schemas:
+    permission:
+      type: object
+      properties:
+        id:
+          description: Action identifier
+          type: UUID
+        isAllowed:
+          type: boolean
+    user:
+      type: object
+      properties:
+        id:
+          type: UUID
+        username:
+          type: string
+        tier:
+          description: Current account tier
+          type: integer
+        status:
+          type: string
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/permission'
+
+    responses:
+      GeneralError:
+        type: object
+        properties:
+          code:
+            type: integer
+            format: int32
+          message:
+            type: string
+      DataInvalidError:
+        type: object
+        properties:
+          code:
+            type: integer
+            format: int32
+          field:
+            type: string
+          message:
+            type: string
+
+    securitySchemes:
+        BearerAuth:
+          type: http
+          scheme: bearer
+
+          

@@ -1,0 +1,227 @@
+/v1/users:
+  get:
+	  summary: Gets all users in the database.
+    security:
+    - BearerAuth
+	  responses:
+			"200":
+				description: A list of users.
+				content:
+					application/json:
+						schema:
+							type: array
+							items:
+                $ref: '#/components/schemas/user'
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+  post:
+    summary: Add a user to the database.
+    security:
+    - BearerAuth
+    responses:
+		  "201":
+				description: Returns the new user's data.
+				content:
+					application/json:
+						schema:
+              $ref: '#/components/schemas/user'      
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - invalid data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/DataInvalidError'
+      "409":
+        description: Error - username is taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+  parameters:
+  - username:
+      type: string
+      in: header
+      required: true
+      schema:
+        type: string
+  - password:
+      type: string
+      in: header
+      required: true
+      schema:
+        type: string
+  - adminTier:
+      type: integer
+      in: header
+      required: true
+      schema:
+        type: string
+
+/v1/users/{userId}:
+  get:
+    summary: Gets data of a single user.
+    security:
+    - BearerAuth
+    responses:
+		  "200":
+				description: Returns the user's data.
+				content:
+					application/json:
+						schema:
+              $ref: '#/components/schemas/responses/user'
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "404":
+        description: Error - there is no such user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+  patch:
+    summary: Modifies the chosen user.
+    security:
+    - BearerAuth
+    responses:
+      "200":
+				description: Returns the user's newly modified data.
+				content:
+					application/json:
+						schema:
+              $ref: '#/components/schemas/responses/user'
+      "401":
+        description: Token-related error.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 admin.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "404":
+        description: Error - there is no such user.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - invalid data.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/DataInvalidError'
+      "409":
+        description: Error - no tier 1 admins would remain.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+
+/v1/users/{userId}/deletion:
+  post:
+    summary: Deletes the chosen user.
+    security:
+    - BearerAuth
+    responses:
+      "204":
+				description: 
+      "401":
+        description: Token-related error.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 admin or the password is incorrect.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "404":
+        description: Error - there is no such user.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - invalid data.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/DataInvalidError'
+      "409":
+        description: Error - deleting own account or no tier 1 admins would remain.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+  parameters:
+    - name: adminPassword
+      in: header
+      description: The tier 1 admin's password.
+      required: true
+      schema:
+        type: string
+
+/v1/users/{userId}/permissions:
+  patch:
+    summary: Modifies the user's permissions.
+    security:
+    - BearerAuth
+    responses:
+      "200":
+        description: The user's permissions have been modified.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: UUID
+                permissions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/permission'
+  parameters:
+    - name: changes
+      in: header
+      description: A list of modified permissions.
+      required: true
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/permission'
