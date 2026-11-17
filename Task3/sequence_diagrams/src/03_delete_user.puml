@@ -1,0 +1,28 @@
+@startuml 
+ title SysMon - Delete user with credential confirmation
+ actor "Tier 1 Administrator" as A
+ participant "SysMon Frontend" as FE
+ participant "Authentication System" as AUTH
+ A -> FE: Select existing user and confirm deletion
+ alt admin cancels
+   FE --> A: Leave account unchanged (no HTTP mutation)
+ else admin confirms
+   A -> FE: Enter administrator password
+   FE -> AUTH: POST /api/auth/reauthenticate\n{password, action: "delete_user", targetUserId}
+   AUTH -> AUTH: Verify current Tier 1 admin password
+   alt verified
+     AUTH --> FE: 200 {confirmationToken,expiresIn}
+     FE -> AUTH: DELETE /api/users/{id}\nX-Confirmation-Token: token
+     AUTH -> AUTH: Verify confirmation is unexpired,\nsingle-use and bound to this user/action
+     alt target exists and deletion allowed
+       AUTH -> AUTH: Delete account; invalidate its sessions
+       AUTH --> FE: 204 No Content
+       FE --> A: Display deletion success
+     else target missing / confirmation invalid
+       AUTH --> FE: 404 USER_NOT_FOUND / 409 INVALID_CONFIRMATION
+     end
+   else wrong password / insufficient rights
+     AUTH --> FE: 401 INVALID_PASSWORD / 403 FORBIDDEN
+   end
+ end
+@enduml

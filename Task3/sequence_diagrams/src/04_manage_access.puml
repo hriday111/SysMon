@@ -1,0 +1,24 @@
+@startuml
+ title SysMon - Manage user tier and resource permissions
+ actor "Tier 1 Administrator" as A
+ participant "SysMon Frontend" as FE
+ participant "Authentication System" as AUTH
+ A -> FE: Open Users > Manage Access
+ FE -> AUTH: GET /api/users\nAuthorization: Bearer token
+ AUTH --> FE: 200 {users:[...]}
+ A -> FE: Select user; edit tier and/or resource rights
+ opt admin tier modified
+   FE -> AUTH: PATCH /api/users/{id}\n{adminTier}
+   AUTH --> FE: 200 Updated user
+ end
+ opt permissions modified
+   FE -> AUTH: PUT /api/users/{id}/permissions\n{permissions: [{resourceType, resourceId, actions}]}
+   AUTH -> AUTH: Validate Tier 1, resource IDs, and actions
+   alt valid
+     AUTH --> FE: 200 {id,permissions:[...]}
+     FE --> A: Show updated permissions
+   else invalid / missing resource / forbidden
+     AUTH --> FE: 400 / 404 / 403 (error envelope)
+   end
+ end
+@enduml

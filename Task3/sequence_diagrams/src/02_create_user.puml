@@ -1,0 +1,18 @@
+@startuml
+ title SysMon - Create user
+ actor "Tier 1 Administrator" as A
+ participant "SysMon Frontend" as FE
+ participant "Authentication System" as AUTH
+ A -> FE: Enter username, password and tier
+ FE -> AUTH: POST /api/users\nAuthorization: Bearer token\n{username, password, adminTier}
+ AUTH -> AUTH: Check token and Tier 1 role
+ alt authorized and valid input
+   AUTH -> AUTH: Hash password; create account\nInitialize permissions = []
+   AUTH --> FE: 201 Created\n{id, username, adminTier, permissions: []}
+   FE --> A: Display created account
+ else invalid fields or duplicate username
+   AUTH --> FE: 400 VALIDATION_ERROR / 409 USERNAME_EXISTS
+ else unauthorized
+   AUTH --> FE: 401 UNAUTHORIZED / 403 FORBIDDEN
+ end
+@enduml
