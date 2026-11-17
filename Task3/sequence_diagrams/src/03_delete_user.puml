@@ -1,28 +1,40 @@
-@startuml 
- title SysMon - Delete user with credential confirmation
- actor "Tier 1 Administrator" as A
- participant "SysMon Frontend" as FE
- participant "Authentication System" as AUTH
- A -> FE: Select existing user and confirm deletion
- alt admin cancels
-   FE --> A: Leave account unchanged (no HTTP mutation)
- else admin confirms
-   A -> FE: Enter administrator password
-   FE -> AUTH: POST /api/auth/reauthenticate\n{password, action: "delete_user", targetUserId}
-   AUTH -> AUTH: Verify current Tier 1 admin password
-   alt verified
-     AUTH --> FE: 200 {confirmationToken,expiresIn}
-     FE -> AUTH: DELETE /api/users/{id}\nX-Confirmation-Token: token
-     AUTH -> AUTH: Verify confirmation is unexpired,\nsingle-use and bound to this user/action
-     alt target exists and deletion allowed
-       AUTH -> AUTH: Delete account; invalidate its sessions
-       AUTH --> FE: 204 No Content
-       FE --> A: Display deletion success
-     else target missing / confirmation invalid
-       AUTH --> FE: 404 USER_NOT_FOUND / 409 INVALID_CONFIRMATION
-     end
-   else wrong password / insufficient rights
-     AUTH --> FE: 401 INVALID_PASSWORD / 403 FORBIDDEN
-   end
- end
+@startuml
+title SysMon - Delete User with Credential Confirmation
+
+actor "Tier 1 Administrator" as A
+participant "SysMon Frontend" as FE
+participant "SysMon Authentication System" as AUTH
+
+A -> FE : Select existing user and confirm deletion
+
+alt Admin cancels
+  FE --> A : Leave account unchanged (no HTTP mutation)
+else Admin confirms
+  A -> FE : Enter administrator password
+  FE -> AUTH : POST /v1/auth/reauthenticate\nAuthorization: Bearer accessToken\n{password, action: "delete_user", targetUserId}
+  AUTH -> AUTH : Verify current Tier 1 admin password
+
+  alt Verified
+    AUTH --> FE : 200 OK\n{confirmationToken, expiresIn}
+    FE -> AUTH : DELETE /v1/users/{userId}\nAuthorization: Bearer accessToken\nX-Confirmation-Token: confirmationToken
+    AUTH -> AUTH : Verify confirmation is unexpired,\nsingle-use and bound to this user/action
+
+    alt Target exists and deletion allowed
+      AUTH -> AUTH : Delete account; invalidate its sessions
+      AUTH --> FE : 204 No Content
+      FE --> A : Display deletion success
+    else Token missing, invalid or expired
+      AUTH --> FE : 401 Unauthorized\n{code, message}
+    else Caller is not a Tier 1 admin
+      AUTH --> FE : 403 Forbidden\n{code, message}
+    else User does not exist
+      AUTH --> FE : 404 Not Found\n{code, message}
+    else Confirmation invalid, own account or last Tier 1
+      AUTH --> FE : 409 Conflict\n{code, message}
+    end
+  else Wrong password / insufficient rights
+    AUTH --> FE : 401 Unauthorized / 403 Forbidden\n{code, message}
+  end
+end
+
 @enduml

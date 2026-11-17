@@ -1,24 +1,71 @@
 @startuml
- title SysMon - Manage user tier and resource permissions
- actor "Tier 1 Administrator" as A
- participant "SysMon Frontend" as FE
- participant "Authentication System" as AUTH
- A -> FE: Open Users > Manage Access
- FE -> AUTH: GET /api/users\nAuthorization: Bearer token
- AUTH --> FE: 200 {users:[...]}
- A -> FE: Select user; edit tier and/or resource rights
- opt admin tier modified
-   FE -> AUTH: PATCH /api/users/{id}\n{adminTier}
-   AUTH --> FE: 200 Updated user
- end
- opt permissions modified
-   FE -> AUTH: PUT /api/users/{id}/permissions\n{permissions: [{resourceType, resourceId, actions}]}
-   AUTH -> AUTH: Validate Tier 1, resource IDs, and actions
-   alt valid
-     AUTH --> FE: 200 {id,permissions:[...]}
-     FE --> A: Show updated permissions
-   else invalid / missing resource / forbidden
-     AUTH --> FE: 400 / 404 / 403 (error envelope)
-   end
- end
+title SysMon - Manage User Tier and Resource Permissions
+
+actor "Tier 1 Administrator" as A
+participant "SysMon Frontend" as FE
+participant "SysMon Authentication System" as AUTH
+participant "SysMon Backend" as Backend
+
+A -> FE : Open Users > Manage Access
+FE -> AUTH : GET /v1/users?page=1&pageSize=20\nAuthorization: Bearer accessToken
+AUTH --> FE : 200 OK\n{items, page, pageSize, total}
+
+A -> FE : Select user; edit tier and/or resource rights
+FE -> AUTH : GET /v1/users/{userId}\nAuthorization: Bearer accessToken
+
+alt Token missing, invalid or expired
+  AUTH --> FE : 401 Unauthorized\n{code, message}
+else Caller is not a Tier 1 admin
+  AUTH --> FE : 403 Forbidden\n{code, message}
+else User does not exist
+  AUTH --> FE : 404 Not Found\n{code, message}
+else User found
+  AUTH --> FE : 200 OK\n{userId, username, tier, status, permissions}
+end
+
+note over FE, AUTH
+  The same 401 and 403 answers apply to every
+  mutating request below unless stated otherwise.
+end note
+
+opt Admin tier modified
+  FE -> AUTH : PATCH /v1/users/{userId}\nAuthorization: Bearer accessToken\n{tier}
+
+  alt Token missing, invalid or expired
+    AUTH --> FE : 401 Unauthorized\n{code, message}
+  else Caller is not a Tier 1 admin
+    AUTH --> FE : 403 Forbidden\n{code, message}
+  else User does not exist
+    AUTH --> FE : 404 Not Found\n{code, message}
+  else Data invalid (tier is not 1, 2 or 3)
+    AUTH --> FE : 422 Unprocessable Entity\n{code, field, message}
+  else Last Tier 1 admin would lose Tier 1
+    AUTH --> FE : 409 Conflict\n{code, message}
+  else All checks passed
+    AUTH --> FE : 200 OK\n{userId, username, tier, status, permissions}
+  end
+end
+
+opt Permissions modified
+  FE -> Backend : GET /v1/compute-groups, /v1/containers\nor /v1/storage-groups\nAuthorization: Bearer accessToken
+  Backend --> FE : 200 OK\n{items, page, pageSize, total}
+
+  FE -> AUTH : PUT /v1/users/{userId}/permissions\nAuthorization: Bearer accessToken\n{permissions: [{resourceType,\nresourceId, actions}]}
+  AUTH -> Backend : GET /v1/containers/{resourceId}\n(or compute-groups, storage-groups)
+  Backend --> AUTH : 200 OK or 404 Not Found
+
+  alt Token missing, invalid or expired
+    AUTH --> FE : 401 Unauthorized\n{code, message}
+  else Caller is not a Tier 1 admin
+    AUTH --> FE : 403 Forbidden\n{code, message}
+  else User or resource does not exist
+    AUTH --> FE : 404 Not Found\n{code, message}
+  else Data invalid (unknown resourceType or actions)
+    AUTH --> FE : 422 Unprocessable Entity\n{code, field, message}
+  else All checks passed
+    AUTH --> FE : 200 OK\n{userId, permissions}
+    FE --> A : Show updated permissions
+  end
+end
+
 @enduml
