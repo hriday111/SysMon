@@ -1,0 +1,108 @@
+@startuml
+title SysMon - Compute Group Management Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+
+note over Frontend
+  Admin (Tier 1 or 2) opens Manage Groups.
+  At any step the admin may cancel: no request is sent.
+end note
+
+== List compute groups ==
+Frontend -> Backend : GET /v1/compute-groups?page=1&pageSize=20\nAuthorization: Bearer token
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not list compute groups
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else All checks passed
+  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+end
+
+note over Frontend, Backend
+  The same 401 and 403 answers apply to every
+  mutating request below unless stated otherwise.
+end note
+
+alt Create compute group
+  note over Frontend
+    Admin enters name, cpuCores, ramBytes and gpuCount
+    and commits Create New Compute Group.
+  end note
+
+  Frontend -> Backend : POST /v1/compute-groups\nAuthorization: Bearer token\nIdempotency-Key: key\n{name, cpuCores, ramBytes, gpuCount}
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Data invalid (empty name, non-positive limits)
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else Limits exceed host hardware capacity
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else Name already taken
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Backend : Create Compute Group (Active)
+    Backend --> Frontend : 201 Created\nLocation: /v1/compute-groups/{computeGroupId}\n{computeGroupId, name, cpuCores,\nramBytes, gpuCount, status, createdAt}
+  end
+
+else Modify compute group
+  note over Frontend
+    Admin selects an existing group, edits CPU, RAM
+    and/or GPU limits and confirms.
+  end note
+
+  Frontend -> Backend : PATCH /v1/compute-groups/{computeGroupId}\nAuthorization: Bearer token\n{cpuCores, ramBytes, gpuCount}
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Compute Group does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Data invalid or limits exceed host hardware
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else All checks passed
+    Backend -> Backend : Apply updated limits to group
+    note right of Backend
+      Open question (US1): whether running
+      containers bound to this group are
+      restarted automatically.
+    end note
+    Backend --> Frontend : 200 OK\n{computeGroupId, name, cpuCores,\nramBytes, gpuCount, status, updatedAt}
+  end
+
+else Delete compute group
+  note over Frontend
+    Admin selects Delete Group and confirms
+    in the deletion dialog.
+  end note
+
+  Frontend -> Backend : DELETE /v1/compute-groups/{computeGroupId}\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Compute Group does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Group still has assigned users or running deployments
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Backend : Delete Compute Group
+    Backend --> Frontend : 204 No Content
+  end
+end
+
+@enduml

@@ -1,0 +1,86 @@
+@startuml
+title SysMon - Container Management Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+participant "Container Engine" as Engine
+
+note over Frontend
+  Admin opens the Containers panel after a successful
+  deployment (see container_deployment sequence).
+  Cancel on a confirmation dialog sends no request.
+end note
+
+== List containers ==
+Frontend -> Backend : GET /v1/containers?page=1&pageSize=20\nAuthorization: Bearer token
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not list containers
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else All checks passed
+  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+end
+
+note over Frontend, Backend
+  The same 401 and 403 answers apply to every
+  request below unless stated otherwise.
+end note
+
+alt Stop container
+  Frontend -> Backend : POST /v1/containers/{containerId}/stop\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller may not manage this container
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Container does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Container is not running
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Engine : POST /containers/{Id}/stop
+    alt Engine reachable
+      Engine --> Backend : 204 No Content
+      Backend --> Frontend : 200 OK\n{containerId, status: stopped}
+    else Engine daemon does not answer in time
+      Backend --> Frontend : 503 Service Unavailable\n{code, message}
+    end
+  end
+
+else Delete container
+  note over Frontend
+    Admin confirms deletion. A running container
+    is stopped before removal.
+  end note
+
+  Frontend -> Backend : DELETE /v1/containers/{containerId}\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller may not manage this container
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Container does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else All checks passed
+    Backend -> Engine : POST /containers/{Id}/stop\n(if still running)
+    Engine --> Backend : 204 No Content\nor already stopped
+    Backend -> Engine : DELETE /containers/{Id}
+    alt Engine reachable
+      Engine --> Backend : 204 No Content
+      Backend -> Backend : Drop container record and telemetry stream
+      Backend --> Frontend : 204 No Content
+    else Engine daemon does not answer in time
+      Backend --> Frontend : 503 Service Unavailable\n{code, message}
+    end
+  end
+end
+
+@enduml

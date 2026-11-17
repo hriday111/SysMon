@@ -1,0 +1,111 @@
+@startuml
+title SysMon - Storage Group Management Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+
+note over Frontend
+  Admin (Tier 1 or 2) opens Manage Groups.
+  At any step the admin may cancel: no request is sent.
+end note
+
+== List storage groups ==
+Frontend -> Backend : GET /v1/storage-groups?page=1&pageSize=20\nAuthorization: Bearer token
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not list storage groups
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else All checks passed
+  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+end
+
+note over Frontend, Backend
+  The same 401 and 403 answers apply to every
+  mutating request below unless stated otherwise.
+end note
+
+alt Create storage group
+  note over Frontend
+    Admin enters name and quotaBytes
+    and commits Create New Storage Group.
+  end note
+
+  Frontend -> Backend : POST /v1/storage-groups\nAuthorization: Bearer token\nIdempotency-Key: key\n{name, quotaBytes}
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Data invalid (empty name, non-positive quota)
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else Quota exceeds free host disk space
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else Name already taken
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Backend : Provision bounded host directory
+    Backend -> Backend : Record quota for the group
+    Backend --> Frontend : 201 Created\nLocation: /v1/storage-groups/{storageGroupId}\n{storageGroupId, name, quotaBytes,\nhostPath, usedBytes, status, createdAt}
+  end
+
+else Modify storage group
+  note over Frontend
+    Admin selects an existing group, edits the
+    quota (and optionally the display name) and confirms.
+  end note
+
+  Frontend -> Backend : PATCH /v1/storage-groups/{storageGroupId}\nAuthorization: Bearer token\n{name, quotaBytes}
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Storage Group does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Data invalid or quota exceeds free host disk space
+    Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else New quota is below current usedBytes
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Backend : Apply updated quota to group
+    note right of Backend
+      Open question (US2): enforcement mechanism
+      (filesystem quotas, sized volumes or
+      periodic usage checks).
+    end note
+    Backend --> Frontend : 200 OK\n{storageGroupId, name, quotaBytes,\nhostPath, usedBytes, status, updatedAt}
+  end
+
+else Delete storage group
+  note over Frontend
+    Admin selects Delete Group and confirms
+    in the deletion dialog.
+  end note
+
+  Frontend -> Backend : DELETE /v1/storage-groups/{storageGroupId}\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not Tier 1 or 2
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else Storage Group does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Group still has assigned users or bound volumes
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Backend : Remove quota record and host directory
+    Backend --> Frontend : 204 No Content
+  end
+end
+
+@enduml

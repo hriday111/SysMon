@@ -1,0 +1,95 @@
+@startuml
+title SysMon - Manage LLM Instances Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+participant "Ollama Runtime" as Ollama
+
+note over Frontend
+  Admin (Tier 1, 2 or 3) opens the LLM console.
+  At any step the admin may cancel a stop confirmation:
+  no stop request is sent and the instance stays Running.
+end note
+
+== List running instances ==
+Frontend -> Backend : GET /v1/llms?page=1&pageSize=20\nAuthorization: Bearer token
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not list LLM instances
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else All checks passed
+  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+end
+
+note over Frontend, Backend
+  The same 401 and 403 answers apply to every
+  request below unless stated otherwise.
+end note
+
+alt Stop LLM instance
+  note over Frontend
+    Admin selects a running instance, is asked
+    for confirmation and confirms Stop.
+  end note
+
+  Frontend -> Backend : POST /v1/llms/{llmId}/stop\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller may not manage this instance
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else LLM instance does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Instance is not in Running state
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Ollama : Terminate process on instance port
+    alt Terminate succeeded
+      Ollama --> Backend : stopped
+      Backend -> Backend : Mark instance Stopped
+      Backend --> Frontend : 200 OK\n{llmId, status: stopped, stoppedAt}
+    else Terminate failed
+      Ollama --> Backend : error
+      Backend --> Frontend : 502 Bad Gateway\n{code, message}
+    end
+  end
+
+else Restart LLM instance
+  note over Frontend
+    Admin selects a running instance and chooses Restart.
+    Restart reuses the same port, model and parameters.
+  end note
+
+  Frontend -> Backend : POST /v1/llms/{llmId}/restart\nAuthorization: Bearer token
+  Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+  Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+  alt Token missing, invalid or expired
+    Backend --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller may not manage this instance
+    Backend --> Frontend : 403 Forbidden\n{code, message}
+  else LLM instance does not exist
+    Backend --> Frontend : 404 Not Found\n{code, message}
+  else Instance is not in Running or Stopped state
+    Backend --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Backend -> Ollama : Stop then start with stored parameters
+    alt Restart succeeded
+      Ollama --> Backend : listening
+      Backend -> Backend : Mark instance Running
+      Backend --> Frontend : 200 OK\n{llmId, status: running, endpoint, restartedAt}
+    else Restart failed
+      Ollama --> Backend : error
+      Backend -> Backend : Mark instance Failed
+      Backend --> Frontend : 502 Bad Gateway\n{code, message}
+    end
+  end
+end
+
+@enduml

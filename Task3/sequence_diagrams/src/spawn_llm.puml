@@ -1,0 +1,77 @@
+@startuml
+title SysMon - Spawn LLM Server Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+participant "Ollama Runtime" as Ollama
+
+note over Frontend
+  Admin (Tier 1, 2 or 3) opens the LLM console,
+  pastes a HuggingFace model repository, sets context
+  length, CPU/GPU split and server port, then clicks Spawn.
+end note
+
+== Spawn ==
+Frontend -> Backend : POST /v1/llms\nAuthorization: Bearer token\nIdempotency-Key: key\n{modelRepo, contextLength,\ncpuGpuSplit, port, computeGroupId}
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not spawn LLMs or use the chosen Compute Group
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else Compute Group does not exist
+  Backend --> Frontend : 404 Not Found\n{code, message}
+else Data invalid (empty modelRepo, bad port, missing fields)
+  Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+else All checks passed
+  Backend -> Backend : Ensure Ollama runtime is available
+
+  alt Ollama missing on host
+    Backend -> Ollama : installOllama()
+    alt Install failed
+      Ollama --> Backend : error
+      Backend --> Frontend : 503 Service Unavailable\n{code, message}
+    else Install succeeded
+      Ollama --> Backend : installed
+    end
+  else Ollama already available
+    note right of Backend : Skip install
+  end
+
+  Backend -> Backend : Estimate model resource requirements
+  Backend -> Backend : Validate against Compute Group limits
+
+  alt Model exceeds Compute Group (CPU / RAM / GPU)
+    Backend --> Frontend : 409 Conflict\n{code, message, details: resource}
+  else Chosen port already in use
+    Backend --> Frontend : 409 Conflict\n{code, field: port, message}
+  else Validation passed
+    Backend -> Ollama : POST /api/pull\n{model: modelRepo}
+    Ollama --> Backend : 200 OK (model cached)\nor error
+
+    alt Model pull failed
+      Backend --> Frontend : 502 Bad Gateway\n{code, message}
+    else Model ready
+      Backend -> Ollama : Start server on port\nwith model and parameters
+      alt Server start failed
+        Ollama --> Backend : error
+        Backend -> Backend : Mark instance Failed
+        Backend --> Frontend : 502 Bad Gateway\n{code, message}
+      else Server started
+        Ollama --> Backend : listening
+        Backend -> Backend : Register running LLM instance
+        Backend --> Frontend : 201 Created\nLocation: /v1/llms/{llmId}\n{llmId, modelRepo, port, status,\ncomputeGroupId, endpoint, createdAt}
+      end
+    end
+  end
+end
+
+note over Frontend
+  After an error the Frontend shows the reason.
+  The admin may correct the form (port, model,
+  Compute Group) and send the request again.
+end note
+
+@enduml
