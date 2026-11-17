@@ -7,8 +7,8 @@ participant "SysMon Authentication System" as AUTH
 participant "SysMon Backend" as Backend
 
 A -> FE : Open Users > Manage Access
-FE -> AUTH : GET /v1/users?page=1&pageSize=20\nAuthorization: Bearer accessToken
-AUTH --> FE : 200 OK\n{items, page, pageSize, total}
+FE -> AUTH : GET /v1/users\nAuthorization: Bearer accessToken
+AUTH --> FE : 200 OK\n[user, ...]
 
 A -> FE : Select user; edit tier and/or resource rights
 FE -> AUTH : GET /v1/users/{userId}\nAuthorization: Bearer accessToken
@@ -48,7 +48,7 @@ end
 
 opt Permissions modified
   FE -> Backend : GET /v1/compute-groups, /v1/containers\nor /v1/storage-groups\nAuthorization: Bearer accessToken
-  Backend --> FE : 200 OK\n{items, page, pageSize, total}
+  Backend --> FE : 200 OK\n[resource, ...]
 
   FE -> AUTH : PUT /v1/users/{userId}/permissions\nAuthorization: Bearer accessToken\n{permissions: [{resourceType,\nresourceId, actions}]}
   AUTH -> Backend : GET /v1/containers/{resourceId}\n(or compute-groups, storage-groups)

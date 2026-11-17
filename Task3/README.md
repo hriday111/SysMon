@@ -2,7 +2,20 @@
 
 This checkpoint describes how SysMon components talk to each other on the standard and abnormal paths. Communication uses a **REST API** over HTTP (CRUD style). Identification and authorization use a **Bearer token**; successful validation returns `{userId, tier}`. Error bodies use `{code, message}` and optionally `{field}` or `{details}`.
 
-The formal OpenAPI/Swagger document for these contracts is optional for this revision; message fields are shown inline on each sequence diagram. Sequence diagrams cover the whole inter-component surface needed for the next-semester common standard: users, containers, compute groups, storage groups, and LLM orchestration.
+Sequence diagrams cover the inter-component surface for users, containers, compute groups, storage groups, and LLM orchestration. Message fields are shown inline on the diagrams and summarized below. Where an OpenAPI draft exists, the diagrams follow that contract (in particular, **list endpoints return a JSON array** of resources, not a paginated envelope).
+
+## OpenAPI drafts
+
+Formal message schemas live under [`OpenAPI_yaml/`](./OpenAPI_yaml/):
+
+| File | Coverage |
+| --- | --- |
+| `components.yaml` | Shared schemas (user, compute-group, storage-group, errors, BearerAuth) |
+| `users.yaml` | `/v1/users` and related paths |
+| `compute-groups.yaml` | `/v1/compute-groups` |
+| `storage-groups.yaml` | `/v1/storage-groups` |
+
+**Note:** OpenAPI YAML is currently written only for **users**, **compute groups**, and **storage groups** (plus shared `components`). YAML for **containers**, **auth**, and **LLMs** is not drafted yet; those resources will use the **same structure and conventions** as the existing files (path fragments, BearerAuth, array list responses, shared error schemas).
 
 ## Components
 
@@ -93,48 +106,54 @@ Happy path: list, stop (`POST /v1/llms/{llmId}/stop`), restart (`POST .../restar
 
 # Message shape summary (inline contracts)
 
-These shapes are what OpenAPI would formalize later. They are already the payloads drawn on the diagrams.
+Aligned with the OpenAPI drafts where those exist. List `GET`s return a **JSON array**. Create/update fields are shown as JSON bodies on the diagrams (same fields as in the YAML path parameters).
 
-### Auth
+### Auth / users
 
 | Exchange | Shape |
 | --- | --- |
-| Validate | `GET /v1/auth/validate` → `{userId, tier}` |
-| Create user | `POST /v1/users` body `{username, password, tier}` → `{userId, username, tier, status, permissions, createdAt}` |
-| Delete user | `POST /v1/users/{userId}/deletion` body `{adminPassword}` → `204` |
-| Patch tier | `PATCH /v1/users/{userId}` body `{tier}` |
-| Patch permissions | `PATCH /v1/users/{userId}/permissions` body `{changes}` |
+| List users | `GET /v1/users` → `[user, ...]` |
+| Get user | `GET /v1/users/{userId}` → `user` |
+| Validate | `GET /v1/auth/validate` → `{userId, tier}` (YAML for auth still pending; same style as other drafts) |
+| Create user | `POST /v1/users` → `user` (`201`) |
+| Delete user | `POST /v1/users/{userId}/deletion` → `204` |
+| Patch tier | `PATCH /v1/users/{userId}` → `user` |
+| Patch permissions | `PATCH /v1/users/{userId}/permissions` → `{userId, permissions}` |
 
 ### Compute groups
 
 | Exchange | Shape |
 | --- | --- |
-| Create | `{name, cpuCores, ramBytes, gpuCount}` → `{computeGroupId, name, cpuCores, ramBytes, gpuCount, status, createdAt}` |
-| Modify | `{cpuCores, ramBytes, gpuCount}` → updated resource |
-| Delete | `204` or `409` if still assigned / deployed |
+| List | `GET /v1/compute-groups` → `[compute-group, ...]` |
+| Create | `POST /v1/compute-groups` → `compute-group` (`201`) |
+| Modify | `PATCH /v1/compute-groups/{computeGroupId}` → `compute-group` |
+| Delete | `DELETE` → `204` or `409` if still assigned / deployed |
 
 ### Storage groups
 
 | Exchange | Shape |
 | --- | --- |
-| Create | `{name, quotaBytes}` → `{storageGroupId, name, quotaBytes, hostPath, usedBytes, status, createdAt}` |
-| Modify | `{name, quotaBytes}` → updated resource (`409` if quota &lt; `usedBytes`) |
-| Delete | `204` or `409` if still in use |
+| List | `GET /v1/storage-groups` → `[storage-group, ...]` |
+| Create | `POST /v1/storage-groups` → `storage-group` (`201`) |
+| Modify | `PATCH /v1/storage-groups/{storageGroupId}` → `storage-group` |
+| Delete | `DELETE` → `204` or `409` if still in use |
 
-### Containers
+### Containers (YAML pending — same structure as above)
 
 | Exchange | Shape |
 | --- | --- |
-| Deploy | `{image, engine, computeGroupId, storageGroupId, volumes}` → `{containerId, status, image, engine, ...}` |
+| List | `GET /v1/containers` → `[container, ...]` |
+| Deploy | `POST /v1/containers` → container (`201`) |
 | Telemetry (SSE) | event `{timestamp, cpuPercent, memoryBytes, diskBytes}` |
 | Stop / delete | status update or `204`; Engine uses `/containers/{Id}/stop` and `DELETE /containers/{Id}` |
 
-### LLMs
+### LLMs (YAML pending — same structure as above)
 
 | Exchange | Shape |
 | --- | --- |
-| Spawn | `{modelRepo, contextLength, cpuGpuSplit, port, computeGroupId}` → `{llmId, modelRepo, port, status, computeGroupId, endpoint, createdAt}` |
-| Stop / restart | `{llmId, status, ...}` or `502` if Ollama fails |
+| List | `GET /v1/llms` → `[llm, ...]` |
+| Spawn | `POST /v1/llms` → llm (`201`) |
+| Stop / restart | status update or `502` if Ollama fails |
 
 ---
 

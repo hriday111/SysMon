@@ -13,9 +13,9 @@ end note
 
 == Load the groups assigned to the admin ==
 Frontend -> Backend : GET /v1/compute-groups\nAuthorization: Bearer token
-Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+Backend --> Frontend : 200 OK\n[compute-group, ...]
 Frontend -> Backend : GET /v1/storage-groups\nAuthorization: Bearer token
-Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+Backend --> Frontend : 200 OK\n[storage-group, ...]
 
 note over Frontend
   Admin enters the image repository tag, selects the

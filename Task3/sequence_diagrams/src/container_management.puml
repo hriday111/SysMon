@@ -13,7 +13,7 @@ note over Frontend
 end note
 
 == List containers ==
-Frontend -> Backend : GET /v1/containers?page=1&pageSize=20\nAuthorization: Bearer token
+Frontend -> Backend : GET /v1/containers\nAuthorization: Bearer token
 Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
 Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
 
@@ -22,7 +22,7 @@ alt Token missing, invalid or expired
 else Caller may not list containers
   Backend --> Frontend : 403 Forbidden\n{code, message}
 else All checks passed
-  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+  Backend --> Frontend : 200 OK\n[container, ...]
 end
 
 note over Frontend, Backend

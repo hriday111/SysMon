@@ -12,8 +12,8 @@ note over Frontend
 end note
 
 == Select a user ==
-Frontend -> Auth : GET /v1/users?page=1&pageSize=20\nAuthorization: Bearer token
-Auth --> Frontend : 200 OK\n{items, page, pageSize, total}
+Frontend -> Auth : GET /v1/users\nAuthorization: Bearer token
+Auth --> Frontend : 200 OK\n[user, ...]
 Frontend -> Auth : GET /v1/users/{userId}\nAuthorization: Bearer token
 
 alt Token missing, invalid or expired
@@ -50,7 +50,7 @@ alt Admin tier of the user is modified
   end
 else Permissions are modified
   Frontend -> Backend : GET /v1/compute-groups, /v1/containers\nor /v1/storage-groups\nAuthorization: Bearer token
-  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+  Backend --> Frontend : 200 OK\n[resource, ...]
 
   Frontend -> Auth : PATCH /v1/users/{userId}/permissions\nAuthorization: Bearer token\n{changes}
   Auth -> Backend : GET /v1/containers/{objectId}\n(or compute-groups, storage-groups)

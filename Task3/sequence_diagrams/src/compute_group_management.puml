@@ -11,7 +11,7 @@ note over Frontend
 end note
 
 == List compute groups ==
-Frontend -> Backend : GET /v1/compute-groups?page=1&pageSize=20\nAuthorization: Bearer token
+Frontend -> Backend : GET /v1/compute-groups\nAuthorization: Bearer token
 Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
 Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
 
@@ -20,7 +20,7 @@ alt Token missing, invalid or expired
 else Caller may not list compute groups
   Backend --> Frontend : 403 Forbidden\n{code, message}
 else All checks passed
-  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+  Backend --> Frontend : 200 OK\n[compute-group, ...]
 end
 
 note over Frontend, Backend
