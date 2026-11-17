@@ -1,0 +1,35 @@
+@startuml
+title SysMon - User Deletion Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Authentication System" as Auth
+
+note over Frontend
+  Admin (Tier 1) opens the Users panel, selects Manage Access,
+  selects an existing user and selects Delete User.
+  The Frontend displays the deletion confirmation panel.
+end note
+
+alt Admin confirms deletion
+  Frontend -> Auth : POST /v1/users/{userId}/deletion\nAuthorization: Bearer token\n{adminPassword}
+  Auth -> Auth : Validate token
+
+  alt Token missing, invalid or expired
+    Auth --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not a Tier 1 admin
+    Auth --> Frontend : 403 Forbidden\n{code, message}
+  else Admin password missing or incorrect
+    Auth --> Frontend : 403 Forbidden\n{code, message}
+  else User does not exist
+    Auth --> Frontend : 404 Not Found\n{code, message}
+  else Own account or last Tier 1 admin
+    Auth --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Auth -> Auth : Delete selected user account
+    Auth --> Frontend : 204 No Content
+  end
+else Admin cancels deletion
+  note over Frontend, Auth : No request is sent. The user account is left unchanged.
+end
+
+@enduml

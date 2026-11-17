@@ -1,0 +1,65 @@
+@startuml
+title SysMon - Container Deployment Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Backend" as Backend
+participant "SysMon Authentication System" as Auth
+participant "Container Engine" as Engine
+
+note over Frontend
+  Admin (Tier 2 or 3) opens Create Container
+  and selects Visual Builder.
+end note
+
+== Load the groups assigned to the admin ==
+Frontend -> Backend : GET /v1/compute-groups\nAuthorization: Bearer token
+Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+Frontend -> Backend : GET /v1/storage-groups\nAuthorization: Bearer token
+Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+
+note over Frontend
+  Admin enters the image repository tag, selects the
+  Compute Group, maps data to a Storage Group folder,
+  selects Docker or Podman and clicks Deploy.
+end note
+
+== Deploy ==
+Frontend -> Backend : POST /v1/containers\nAuthorization: Bearer token\nIdempotency-Key: key\n{image, engine, computeGroupId,\nstorageGroupId, volumes}
+Backend -> Auth : GET /v1/auth/validate\nAuthorization: Bearer token
+Auth --> Backend : 200 OK {userId, tier}\nor 401 Unauthorized
+
+alt Token missing, invalid or expired
+  Backend --> Frontend : 401 Unauthorized\n{code, message}
+else Caller may not create containers or use the chosen groups
+  Backend --> Frontend : 403 Forbidden\n{code, message}
+else Compute Group or Storage Group does not exist
+  Backend --> Frontend : 404 Not Found\n{code, message}
+else Data invalid (empty image tag, path outside Storage Group)
+  Backend --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+else Storage Group quota exceeded
+  Backend --> Frontend : 409 Conflict\n{code, message}
+else All checks passed
+  Backend -> Backend : Inject Compute Group resource limits
+  Backend -> Backend : Insert approved Storage Group host paths
+  Backend -> Backend : Generate docker-compose.yml
+  Backend -> Engine : POST /containers/create\n(from the generated Compose file)
+
+  alt Engine daemon reachable
+    Engine --> Backend : 201 Created {Id}
+    Backend -> Engine : POST /containers/{Id}/start
+    Engine --> Backend : 204 No Content
+    Backend --> Frontend : 201 Created\nLocation: /v1/containers/{containerId}\n{containerId, status, image, engine, ...}
+
+    Frontend -> Backend : GET /v1/containers/{containerId}/telemetry\nAccept: text/event-stream
+    Backend --> Frontend : 200 OK (event stream)
+    loop While the container runs
+      Backend --> Frontend : event {timestamp, cpuPercent,\nmemoryBytes, diskBytes}
+    end
+  else Engine daemon does not answer in time
+    note right of Engine : No answer from the engine daemon
+    Backend -> Backend : Save generated Compose file as draft
+    Backend --> Frontend : 503 Service Unavailable\n{code, message, details: draftId}
+  end
+end
+
+@enduml

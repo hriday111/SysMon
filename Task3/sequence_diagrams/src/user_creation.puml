@@ -1,0 +1,35 @@
+@startuml
+title SysMon - User Creation Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Authentication System" as Auth
+
+note over Frontend
+  Admin (Tier 1) opens the Users panel, selects Add User,
+  enters username, password and tier and commits the changes.
+end note
+
+Frontend -> Auth : POST /v1/users\nAuthorization: Bearer token\n{username, password, tier}
+Auth -> Auth : Validate token
+
+alt Token missing, invalid or expired
+  Auth --> Frontend : 401 Unauthorized\n{code, message}
+else Caller is not a Tier 1 admin
+  Auth --> Frontend : 403 Forbidden\n{code, message}
+else Data invalid (username, password or tier)
+  Auth --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+else Username already taken
+  Auth --> Frontend : 409 Conflict\n{code, message}
+else All checks passed
+  Auth -> Auth : Create new user account
+  Auth -> Auth : Assign selected admin tier
+  Auth -> Auth : Initialize account with no permissions
+  Auth --> Frontend : 201 Created\nLocation: /v1/users/{userId}\n{userId, username, tier, status, permissions, createdAt}
+end
+
+note over Frontend
+  After 401, 403, 409 or 422 the Frontend displays the error.
+  The admin may correct the form and send the request again.
+end note
+
+@enduml

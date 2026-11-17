@@ -1,0 +1,73 @@
+@startuml
+title SysMon - Managing User Access Sequence Diagram
+
+participant "SysMon Frontend" as Frontend
+participant "SysMon Authentication System" as Auth
+participant "SysMon Backend" as Backend
+
+note over Frontend
+  Admin (Tier 1) opens the Users panel and selects Manage Access.
+  At any step the admin may cancel or close the panel:
+  no request is sent and no changes are introduced.
+end note
+
+== Select a user ==
+Frontend -> Auth : GET /v1/users?page=1&pageSize=20\nAuthorization: Bearer token
+Auth --> Frontend : 200 OK\n{items, page, pageSize, total}
+Frontend -> Auth : GET /v1/users/{userId}\nAuthorization: Bearer token
+
+alt Token missing, invalid or expired
+  Auth --> Frontend : 401 Unauthorized\n{code, message}
+else Caller is not a Tier 1 admin
+  Auth --> Frontend : 403 Forbidden\n{code, message}
+else User does not exist
+  Auth --> Frontend : 404 Not Found\n{code, message}
+else User found
+  Auth --> Frontend : 200 OK\n{userId, username, tier, status, permissions}
+end
+
+note over Frontend, Auth
+  The same 401 and 403 answers apply to every
+  request of this diagram.
+end note
+
+alt Admin tier of the user is modified
+  Frontend -> Auth : PATCH /v1/users/{userId}\nAuthorization: Bearer token\n{tier}
+
+  alt Token missing, invalid or expired
+    Auth --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not a Tier 1 admin
+    Auth --> Frontend : 403 Forbidden\n{code, message}
+  else User does not exist
+    Auth --> Frontend : 404 Not Found\n{code, message}
+  else Data invalid (tier is not 1, 2 or 3)
+    Auth --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else Last Tier 1 admin would lose Tier 1
+    Auth --> Frontend : 409 Conflict\n{code, message}
+  else All checks passed
+    Auth -> Auth : Modify admin tier of the chosen user
+    Auth --> Frontend : 200 OK\n{userId, username, tier, status, permissions}
+  end
+else Permissions are modified
+  Frontend -> Backend : GET /v1/compute-groups, /v1/containers\nor /v1/storage-groups\nAuthorization: Bearer token
+  Backend --> Frontend : 200 OK\n{items, page, pageSize, total}
+
+  Frontend -> Auth : PATCH /v1/users/{userId}/permissions\nAuthorization: Bearer token\n{changes}
+  Auth -> Backend : GET /v1/containers/{objectId}\n(or compute-groups, storage-groups)
+  Backend --> Auth : 200 OK or 404 Not Found
+
+  alt Token missing, invalid or expired
+    Auth --> Frontend : 401 Unauthorized\n{code, message}
+  else Caller is not a Tier 1 admin
+    Auth --> Frontend : 403 Forbidden\n{code, message}
+  else User or object does not exist
+    Auth --> Frontend : 404 Not Found\n{code, message}
+  else Data invalid (unknown object type or permission)
+    Auth --> Frontend : 422 Unprocessable Entity\n{code, field, message}
+  else All checks passed
+    Auth -> Auth : Modify permissions of the chosen user
+    Auth --> Frontend : 200 OK\n{userId, permissions}
+  end
+end
+
+@enduml
