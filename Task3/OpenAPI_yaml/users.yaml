@@ -61,23 +61,20 @@
                 $ref: '#/components/schemas/responses/GeneralError'
   parameters:
   - username:
-      type: string
       in: header
-      required: true
+      required: false
       schema:
         type: string
   - password:
-      type: string
       in: header
-      required: true
+      required: false
       schema:
         type: string
   - adminTier:
-      type: integer
       in: header
-      required: true
+      required: false
       schema:
-        type: string
+        type: integer
 
 /v1/users/{userId}:
   get:
@@ -138,18 +135,18 @@
           application/json:
             schema:
               $ref: '#/components/schemas/responses/GeneralError'
-      "422":
-        description: Error - invalid data.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/responses/DataInvalidError'
       "409":
         description: Error - no tier 1 admins would remain.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - invalid data.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/DataInvalidError'
 
 /v1/users/{userId}/deletion:
   post:
@@ -158,7 +155,7 @@
     - BearerAuth
     responses:
       "204":
-				description: 
+        description: Deletion successful.
       "401":
         description: Token-related error.
         content:
@@ -177,18 +174,18 @@
           application/json:
             schema:
               $ref: '#/components/schemas/responses/GeneralError'
-      "422":
-        description: Error - invalid data.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/responses/DataInvalidError'
       "409":
         description: Error - deleting own account or no tier 1 admins would remain.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - invalid data.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/DataInvalidError'
   parameters:
     - name: adminPassword
       in: header

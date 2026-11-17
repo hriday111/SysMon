@@ -1,0 +1,151 @@
+/v1/storage-groups:
+  get:
+	  summary: Gets all storage groups in the database.
+    security:
+    - BearerAuth
+	  responses:
+			"200":
+				description: A list of storage groups.
+				content:
+					application/json:
+						schema:
+							type: array
+							items:
+                $ref: '#/components/schemas/storage-group'
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+  post:
+    summary: Creates a new storage group.
+    security:
+    - BearerAuth
+    responses:
+      "201":
+				description: Returns the new storage group's data.
+				content:
+					application/json:
+						schema:
+              $ref: '#/components/schemas/storage-group'      
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 or 2 admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - data invalid or host disk space capacity exceeded by quota.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/DataInvalidError'
+      "409":
+        description: Error - group name is taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+  parameters:
+  - name:
+      in: header
+      required: false
+      schema:
+        type: string
+  - quotaBytes:
+      in: header
+      required: false
+      schema:
+        type: integer
+
+/v1/storage-groups/{storageGroupId}:
+  patch:
+    summary: Modifies an existing storage group.
+    security:
+    - BearerAuth
+    responses:
+      "200":
+				description: Returns the new storage group's data.
+				content:
+					application/json:
+						schema:
+              $ref: '#/components/schemas/storage-group'
+      "401":
+        description: Token-related error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 or 2 admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "404":
+        description: Error - group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/GeneralError'
+      "422":
+        description: Error - data invalid or host disk space capacity exceeded by quota.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responses/DataInvalidError'
+  delete:
+    summary: Deletes a storage group.
+    security:
+    - BearerAuth
+    responses:
+      "204":
+        description: Deletion successful.
+      "401":
+        description: Token-related error.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "403":
+        description: Error - user is not a tier 1 or 2 admin.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "404":
+        description: Error - group does not exist.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+      "409":
+        description: Error - group has assigned users or bound volumes.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/responses/GeneralError'
+  parameters:
+  - name:
+      in: header
+      required: false
+      schema:
+        type: string
+  - quotaBytes:
+      in: header
+      required: false
+      schema:
+        type: integer

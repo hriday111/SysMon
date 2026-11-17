@@ -1,5 +1,23 @@
 components:
   schemas:
+    compute-group:
+      type: object
+      properties:
+        computeGroupId:
+          type: UUID
+        cpuCores:
+          type: integer
+        createdAt:
+          type: string
+          format: date
+        gpuCount:
+          type: integer
+        name:
+          type: string
+        ramBytes:
+          type: integer
+        status:
+          type: string
     permission:
       type: object
       properties:
@@ -8,6 +26,24 @@ components:
           type: UUID
         isAllowed:
           type: boolean
+    storage-group:
+      type: object
+      properties:
+        storageGroupId:
+          type: UUID
+        createdAt:
+          type: string
+          format: date
+        hostPath:
+          type: string
+        name:
+          type: string
+        quotaBytes:
+          type: integer
+        status:
+          type: string
+        usedBytes:
+          type: integer
     user:
       type: object
       properties:
